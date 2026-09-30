@@ -7,30 +7,38 @@ The first backend ports Laya to MLX Swift. It runs entirely in-process and loads
 local safetensors checkpoints; Python is only used to generate development
 fixtures. The public API remains provisional.
 
+This is an experimental runtime. Model parity, routing accuracy, and performance
+are measured separately; see [benchmarks and evaluation](Docs/Benchmarks.md).
+
 ## Products
 
 | Product | Responsibility |
 | --- | --- |
 | `PicoDecisions` | Backend-independent requests, typed results, and `DecisionModel` |
 | `PicoDecisionsMLX` | Laya inference, tokenization, checkpoint loading, and calibration |
+| `picodecisions` | Local demo, completed-inference benchmarks, and routing evaluation |
 
 The core target has no runtime dependencies. The MLX target uses MLX Swift and
 swift-transformers' Tokenizers product. SwiftPM still resolves the package's
 backend dependencies. Core ML is planned, but not implemented.
 
-Requires Swift 6.2+, macOS 15+ or iOS 18+, and Apple silicon for MLX. Validation
-currently covers macOS; physical iOS device validation remains outstanding.
+Requires Swift 6.3+, macOS 15+ or iOS 18+, and Apple silicon for MLX. The pinned
+MLX Swift dependency requires Swift 6.3, including when resolving core-only builds.
+Validation currently covers macOS; physical iOS device validation remains outstanding.
 
 ## Use a local checkpoint
 
-Add this package as a local Swift package dependency and link `PicoDecisionsMLX`.
+Add [PicoMLX/PicoDecisions](https://github.com/PicoMLX/PicoDecisions) as a Swift
+package dependency and link `PicoDecisionsMLX`. The provisional API is available
+on `main`; pin a commit when integrating it.
 Download the validated multilingual checkpoint separately, for example with the
 Hugging Face CLI:
 
 ```sh
 hf download convaiinnovations/laya-multilingual \
+  model.safetensors encoder/config.json rl_agent_config.json \
+  tokenizer/tokenizer.json tokenizer/tokenizer_config.json \
   --revision 052592a15d198d9ad47da779604259b10b47b7aa \
-  --include 'model.safetensors' 'encoder/config.json' 'rl_agent_config.json' 'tokenizer/*' \
   --local-dir models/laya-multilingual
 ```
 
@@ -124,15 +132,57 @@ TEST_RUNNER_PICODECISIONS_LAYA_MODEL="$PWD/models/laya-multilingual" \
 
 See [validation details](Docs/Validation.md) for provenance, numerical comparisons,
 and fixture regeneration. `swift build --target PicoDecisions` builds the core;
-plain `swift test` does not compile the Metal library needed for inference tests.
+`Scripts/test.sh core` runs core API and CLI checks through SwiftPM. Use the
+Xcode-backed inference and checkpoint modes for repeatable Metal validation.
 
 ## Integration and next steps
 
 PicoDecisions evaluates questions; consuming applications own tool retrieval and
-execution. SmartToolSelection can retrieve a bounded candidate set and pass its
-IDs/descriptions to `DecisionModel`, with an explicit no-match choice. This adapter
-and end-to-end retrieval evaluation remain future work. See the
-[implementation plan](Docs/ImplementationPlan.md).
+execution. `ToolDecisionSelector` evaluates a bounded candidate set with an
+explicit no-match choice:
+
+```swift
+let selector = try ToolDecisionSelector(model: model, maximumCandidates: 8)
+let selection = try await selector.select(
+    query: "Find yesterday's order; do not cancel it.",
+    candidates: [
+        ToolDecisionCandidate(id: "find_order", description: "Look up an existing order"),
+        ToolDecisionCandidate(id: "cancel_order", description: "Cancel an existing order")
+    ]
+)
+print(selection.selectedCandidateID as Any) // nil means no matching tool
+```
+
+The selector preserves candidate IDs and retrieval scores, validates model
+responses, and skips inference for an empty candidate set. Retrieval scores are
+metadata, separate from decision probabilities. It recommends one tool; callers
+own thresholds, argument collection, authorization, execution, and fallback.
+SmartToolSelection/PicoCore can supply candidates, but consuming-application
+integration and representative retrieval evaluation remain future work.
+See the [implementation plan](Docs/ImplementationPlan.md).
+
+## Run the demo and measurements
+
+On an Apple silicon Mac with Xcode and its Metal compiler, run:
+
+```sh
+Scripts/run.sh demo --model models/laya-multilingual
+Scripts/run.sh benchmark --model models/laya-multilingual --precision float16 \
+  --questions 1,8,20 --iterations 20 --output benchmark.json
+Scripts/run.sh evaluate --model models/laya-multilingual \
+  --dataset Evaluation/routing-smoke.json --output evaluation.json
+```
+
+The script builds the executable in Release mode using Xcode, which compiles the
+required Metal library. Results are JSON. Benchmarks include tokenization and
+result processing, separate first-call and warm timings, and report MLX memory.
+The included routing dataset is a small handwritten development smoke test with
+manually ranked candidates. Use your own labeled requests before making accuracy
+or calibration claims. See [measurement details](Docs/Benchmarks.md).
+
+For repeatable validation, use `Scripts/test.sh core`, `Scripts/test.sh inference`,
+or `PICODECISIONS_LAYA_MODEL="$PWD/models/laya-multilingual" Scripts/test.sh checkpoint`.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for CI and environment details.
 
 ## Attribution
 

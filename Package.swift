@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.3
 
 import PackageDescription
 
@@ -7,7 +7,8 @@ let package = Package(
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
         .library(name: "PicoDecisions", targets: ["PicoDecisions"]),
-        .library(name: "PicoDecisionsMLX", targets: ["PicoDecisionsMLX"])
+        .library(name: "PicoDecisionsMLX", targets: ["PicoDecisionsMLX"]),
+        .executable(name: "picodecisions", targets: ["PicoDecisionsCLI"])
     ],
     dependencies: [
         .package(url: "https://github.com/ml-explore/mlx-swift", .upToNextMinor(from: "0.31.6")),
@@ -21,6 +22,11 @@ let package = Package(
             .product(name: "MLXNN", package: "mlx-swift"),
             .product(name: "Tokenizers", package: "swift-transformers")
         ]),
+        .executableTarget(name: "PicoDecisionsCLI", dependencies: [
+            "PicoDecisions", "PicoDecisionsMLX",
+            .product(name: "MLX", package: "mlx-swift")
+        ]),
+        .testTarget(name: "PicoDecisionsCLITests", dependencies: ["PicoDecisionsCLI"]),
         .testTarget(name: "PicoDecisionsTests", dependencies: ["PicoDecisions"]),
         .testTarget(name: "PicoDecisionsMLXTests", dependencies: ["PicoDecisionsMLX"],
                     resources: [.copy("Fixtures")])

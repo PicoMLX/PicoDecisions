@@ -1,0 +1,180 @@
+{
+  "batchSize" : 16,
+  "checkpoint" : {
+    "agentConfigurationSHA256" : "25061739243b617ad88d1219ba6f8a9c86c5881ca28df024fa2d9b3b2fcc30c6",
+    "directoryName" : "laya-multilingual",
+    "encoderConfigurationSHA256" : "83f6916d13ef0f556ac461f28308dc2bffa7ebeadee8ec9e2db5812020ea5bb4",
+    "tokenizerConfigurationSHA256" : "424b69444bf7b5809dc2cd2e36d0bd71b8055124dd24274d6db3c655d38205e7",
+    "tokenizerSHA256" : "609d8f4c067cd3950f88594c5a802616cea245823836ef5848ee4fc40aab5b6f",
+    "weightsSHA256" : "9d628fd971b700382ac6f65920a86f149777b2e748e0c955fb3b19695aa8f204"
+  },
+  "loadMilliseconds" : 1663.4944580000001,
+  "memoryAfterLoad" : {
+    "activeMemory" : 1288060964,
+    "cacheMemory" : 643421706,
+    "peakMemory" : 1931480614
+  },
+  "precision" : "float32",
+  "runtime" : {
+    "buildConfiguration" : "release",
+    "gpu" : "Apple M1 Max",
+    "operatingSystem" : "Version 26.6.2 (Build 25G83)",
+    "physicalMemoryBytes" : 34359738368,
+    "processorCount" : 10
+  },
+  "schemaVersion" : 1,
+  "stateCharacterCount" : 54,
+  "timestamp" : "2026-09-30T04:04:00Z",
+  "warmupCalls" : 3,
+  "workloads" : [
+    {
+      "firstPredictionMilliseconds" : 40.464084,
+      "inputTokenCounts" : [
+        47
+      ],
+      "latency" : {
+        "meanMilliseconds" : 41.280616599999995,
+        "medianMilliseconds" : 33.9072915,
+        "minimumMilliseconds" : 32.042958,
+        "p95Milliseconds" : 72.769125,
+        "samplesMilliseconds" : [
+          43.938167,
+          49.019708,
+          38.706917,
+          34.832375,
+          33.439875,
+          33.891833,
+          34.82875,
+          32.352875,
+          32.246125,
+          32.042958,
+          32.875292,
+          33.156333,
+          32.793458,
+          32.710167,
+          33.03725,
+          33.92275,
+          41.0205,
+          67.535666,
+          72.769125,
+          80.492208
+        ]
+      },
+      "memory" : {
+        "activeMemory" : 1287648316,
+        "cacheMemory" : 709400585,
+        "peakMemory" : 1353225203
+      },
+      "questionCount" : 1,
+      "questionsPerSecond" : 24.224444360649404
+    },
+    {
+      "firstPredictionMilliseconds" : 124.409833,
+      "inputTokenCounts" : [
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47
+      ],
+      "latency" : {
+        "meanMilliseconds" : 101.26873939999999,
+        "medianMilliseconds" : 93.850708,
+        "minimumMilliseconds" : 84.882667,
+        "p95Milliseconds" : 149.264375,
+        "samplesMilliseconds" : [
+          149.264375,
+          107.564791,
+          172.152792,
+          112.539167,
+          90.802917,
+          90.8855,
+          96.836416,
+          96.041166,
+          84.882667,
+          89.451625,
+          89.134458,
+          86.273041,
+          92.816666,
+          88.314166,
+          91.04025,
+          88.968083,
+          94.88475,
+          95.242833,
+          104.706542,
+          103.572583
+        ]
+      },
+      "memory" : {
+        "activeMemory" : 1287648316,
+        "cacheMemory" : 1198808185,
+        "peakMemory" : 1806753243
+      },
+      "questionCount" : 8,
+      "questionsPerSecond" : 78.99772474110605
+    },
+    {
+      "firstPredictionMilliseconds" : 317.852125,
+      "inputTokenCounts" : [
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47,
+        47
+      ],
+      "latency" : {
+        "meanMilliseconds" : 200.96429589999997,
+        "medianMilliseconds" : 199.4817705,
+        "minimumMilliseconds" : 188.319042,
+        "p95Milliseconds" : 220.5725,
+        "samplesMilliseconds" : [
+          189.039875,
+          200.449125,
+          198.514416,
+          191.511917,
+          204.862417,
+          220.5725,
+          215.290583,
+          198.118917,
+          202.591541,
+          188.319042,
+          200.714375,
+          205.098959,
+          195.136958,
+          197.539375,
+          206.267709,
+          196.651958,
+          194.15375,
+          189.726417,
+          202.273209,
+          222.452875
+        ]
+      },
+      "memory" : {
+        "activeMemory" : 1287648316,
+        "cacheMemory" : 1959353801,
+        "peakMemory" : 2081234349
+      },
+      "questionCount" : 20,
+      "questionsPerSecond" : 99.52016556190668
+    }
+  ]
+}

@@ -9,6 +9,14 @@ The Xcode package test suite passes, including the optional trained-checkpoint
 suite. Tests cover request validation, configuration and calibration, strict
 weight loading, prompt formatting, attention-window boundaries, padded queries,
 repeated calls, mixed question batches, and both inference precisions.
+The expanded suite also covers concurrent callers, canceled load/predict
+calls, malformed tokenizer/config/checkpoint files, exact state capacity,
+255/256-option limits, the candidate selector, and evaluation metric definitions.
+
+The September 29, 2026 verification passed 16 core, eight CLI, and 26 backend
+test functions, including parameterized cases. The same tests also passed through
+SwiftPM on the Swift 6.4 / Xcode 27 toolchain, which generated the Metal bundle.
+The hosted CI toolchain and physical iOS devices still require independent checks.
 
 The trained multilingual suite compares 15 cases / 60 questions against an
 existing PyTorch FP32 reference. It includes English, Chinese, German, French,
@@ -36,8 +44,9 @@ outputs, and 0.005 for FP16 public outputs.
 These are implementation-parity checks, not evidence of task accuracy or measured
 latency. All tested trained-model choice labels match in both precisions. The tiny
 random model has near-tied options, so its FP16 test checks probability agreement
-rather than requiring an unchanged winning label. No latency or memory benchmarks
-have been established. Physical iOS inference, quantization, Core ML, and the
+rather than requiring an unchanged winning label. A Release benchmark/evaluation
+CLI is now available; see [measurement scope and reproduction](Benchmarks.md).
+Physical iOS inference, quantization, Core ML, and the
 English/typed checkpoints remain unvalidated.
 
 ## Reference provenance
@@ -62,7 +71,9 @@ No trained model weights are included in the repository.
 ## Reproduce
 
 Run the commands in the [README](../README.md) to execute default or optional
-trained-checkpoint tests. Tests do not download models. With Xcode, the
+trained-checkpoint tests, or use `Scripts/test.sh inference` and
+`PICODECISIONS_LAYA_MODEL=/absolute/path/to/model Scripts/test.sh checkpoint`.
+Tests do not download models. With Xcode, the
 `TEST_RUNNER_PICODECISIONS_LAYA_MODEL` environment variable is forwarded as
 `PICODECISIONS_LAYA_MODEL` to the test process. Without that variable, full-checkpoint
 tests are skipped.

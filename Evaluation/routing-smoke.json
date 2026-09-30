@@ -1,0 +1,60 @@
+{
+  "name": "routing-development-smoke-v1",
+  "description": "Handwritten development cases with manually supplied candidate rankings, including intentionally poor rankings and missing candidates. This small dataset is for exercising the evaluation pipeline, not estimating production accuracy. Multiple expected IDs mean any one is acceptable; the selector recommends one tool and does not plan multiple actions.",
+  "cases": [
+    {"id": "lookup-negation", "state": "Find the order I placed yesterday. Do not cancel it.", "expectedToolIDs": ["find_order"], "candidates": [
+      {"id": "cancel_order", "description": "Cancel an existing order", "retrievalScore": 0.88},
+      {"id": "find_order", "description": "Look up an existing order and show its status", "retrievalScore": 0.85}
+    ]},
+    {"id": "cancel-order", "state": "Please cancel order 123.", "expectedToolIDs": ["cancel_order"], "candidates": [
+      {"id": "cancel_order", "description": "Cancel an existing order", "retrievalScore": 0.91},
+      {"id": "find_order", "description": "Look up an existing order and show its status", "retrievalScore": 0.80}
+    ]},
+    {"id": "weather", "state": "What is the weather in San Francisco today?", "expectedToolIDs": ["weather"], "candidates": [
+      {"id": "weather", "description": "Get current weather or a forecast for a location", "retrievalScore": 0.94},
+      {"id": "reminder", "description": "Create a reminder for a future time", "retrievalScore": 0.40}
+    ]},
+    {"id": "reminder", "state": "Remind me tomorrow at 9 AM to buy milk.", "expectedToolIDs": ["reminder"], "candidates": [
+      {"id": "weather", "description": "Get current weather or a forecast for a location", "retrievalScore": 0.80},
+      {"id": "reminder", "description": "Create a reminder for a future time", "retrievalScore": 0.78}
+    ]},
+    {"id": "no-matching-capability", "state": "Translate this sentence into Italian: I love reading.", "expectedToolIDs": [], "candidates": [
+      {"id": "find_order", "description": "Look up an existing order and show its status", "retrievalScore": 0.31},
+      {"id": "weather", "description": "Get current weather or a forecast for a location", "retrievalScore": 0.28}
+    ]},
+    {"id": "explicit-no-action", "state": "I do not want anything done. Do not look up or cancel an order.", "expectedToolIDs": [], "candidates": [
+      {"id": "find_order", "description": "Look up an existing order and show its status", "retrievalScore": 0.90},
+      {"id": "cancel_order", "description": "Cancel an existing order", "retrievalScore": 0.89}
+    ]},
+    {"id": "weather-with-negation", "state": "Do not cancel anything. Only tell me today's weather in Paris.", "expectedToolIDs": ["weather"], "candidates": [
+      {"id": "cancel_order", "description": "Cancel an existing order", "retrievalScore": 0.90},
+      {"id": "weather", "description": "Get current weather or a forecast for a location", "retrievalScore": 0.86}
+    ]},
+    {"id": "multiple-capabilities", "state": "Cancel my order and remind me tomorrow to check the refund.", "expectedToolIDs": ["cancel_order", "reminder"], "candidates": [
+      {"id": "find_order", "description": "Look up an existing order and show its status", "retrievalScore": 0.90},
+      {"id": "cancel_order", "description": "Cancel an existing order", "retrievalScore": 0.85},
+      {"id": "reminder", "description": "Create a reminder for a future time", "retrievalScore": 0.80}
+    ]},
+    {"id": "missing-candidate", "state": "Summarize the attached PDF document.", "expectedToolIDs": ["summarize_document"], "candidates": [
+      {"id": "find_order", "description": "Look up an existing order and show its status", "retrievalScore": 0.50},
+      {"id": "weather", "description": "Get current weather or a forecast for a location", "retrievalScore": 0.45}
+    ]},
+    {"id": "empty-candidates", "state": "Hello!", "expectedToolIDs": [], "candidates": []},
+    {"id": "missing-reminder-details", "state": "Set a reminder for me.", "expectedToolIDs": ["reminder"], "candidates": [
+      {"id": "reminder", "description": "Create a reminder for a future time", "retrievalScore": 0.92},
+      {"id": "weather", "description": "Get current weather or a forecast for a location", "retrievalScore": 0.30}
+    ]},
+    {"id": "german-weather", "state": "Wie ist das Wetter heute in Berlin?", "expectedToolIDs": ["weather"], "candidates": [
+      {"id": "weather", "description": "Get current weather or a forecast for a location", "retrievalScore": 0.85},
+      {"id": "find_order", "description": "Look up an existing order and show its status", "retrievalScore": 0.60}
+    ]},
+    {"id": "french-lookup", "state": "Retrouvez ma commande d'hier, sans l'annuler.", "expectedToolIDs": ["find_order"], "candidates": [
+      {"id": "cancel_order", "description": "Cancel an existing order", "retrievalScore": 0.86},
+      {"id": "find_order", "description": "Look up an existing order and show its status", "retrievalScore": 0.84}
+    ]},
+    {"id": "chinese-cancellation", "state": "请取消我的订单。", "expectedToolIDs": ["cancel_order"], "candidates": [
+      {"id": "find_order", "description": "Look up an existing order and show its status", "retrievalScore": 0.80},
+      {"id": "cancel_order", "description": "Cancel an existing order", "retrievalScore": 0.78}
+    ]}
+  ]
+}

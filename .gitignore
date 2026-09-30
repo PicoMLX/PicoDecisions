@@ -3,5 +3,9 @@
 .swiftpm/
 DerivedData/
 *.xcuserstate
+*.profraw
 xcuserdata/
 models/
+/reports/
+/benchmark*.json
+/evaluation*.json

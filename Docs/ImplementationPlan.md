@@ -22,7 +22,9 @@ directory. Pin checkpoint revisions and record their provenance.
 
 See [Validation.md](Validation.md) for passing synthetic and trained-checkpoint
 comparisons. Remaining work includes physical iOS validation, other checkpoints,
-custom boolean criteria, and performance benchmarks.
+and custom boolean criteria. The `picodecisions` executable now provides completed
+inference benchmarks and labeled candidate-routing evaluation; see
+[Benchmarks.md](Benchmarks.md) for measurement scope and reproduction.
 
 Use Swift Testing with reference fixtures for exact token IDs, prompt formatting,
 option order, marker positions, attention masks, truncation, raw logits,
@@ -39,17 +41,35 @@ Report cold loading separately. Establish FP16 parity before experimenting with
 quantization or compilation. Author-reported Python performance is not a Swift
 performance guarantee.
 
-## 3. Tool-selection integration
+## 3. Tool-selection integration — adapter implemented
 
-Keep catalog retrieval in SmartToolSelection / PicoCore. Add an adapter that
-evaluates a bounded candidate set through `DecisionModel` using concise tool
-descriptions. Keep retrieval similarity and decision probabilities distinct.
+`ToolDecisionSelector` evaluates a bounded candidate set through `DecisionModel`
+using tool descriptions and an explicit no-match choice. It preserves candidate
+IDs, validates outputs, skips empty candidate sets, and keeps retrieval scores
+as metadata separate from model probabilities. Callers own thresholds, argument
+collection, authorization, execution, and fallback.
+
+Catalog retrieval remains in SmartToolSelection / PicoCore. Wiring the adapter into
+a consuming application is still outstanding. The included handwritten routing
+dataset exercises evaluation mechanics; its candidate ranks are supplied manually.
 
 Evaluate retrieval-only and retrieval-plus-Laya against labeled requests,
 including multiple-tool requests, negation, missing information, and no matching
 tool. Measure candidate recall, final accuracy, false rejection, latency, and
 memory before enabling candidate filtering. Preserve existing authorization and
 fallback behavior in consuming applications.
+
+## Development tooling — implemented
+
+`Scripts/test.sh` provides core/CLI, synthetic inference, and opt-in real-checkpoint
+validation. GitHub Actions runs core/CLI tests on hosted macOS; Metal tests require
+a maintainer-dispatched physical runner. `Scripts/run.sh` builds a Release demo,
+benchmark, and evaluator with Xcode. Robustness tests cover calls canceled before execution,
+concurrent callers, malformed checkpoint files, and prompt capacity boundaries.
+
+Next: validate the CI on GitHub, provision the Metal runner, collect a representative
+held-out routing corpus, evaluate actual retrieval output, and assess calibration
+or domain fine-tuning before enabling model-based candidate rejection.
 
 ## 4. Optional Core ML backend
 
