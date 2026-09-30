@@ -78,7 +78,8 @@ func prepareLaya(_ request: DecisionRequest, tokenizer tok: any LayaTokenizing,
             options = values.enumerated().map { "level \($0.offset): \($0.element)" }
         case .boolean:
             type = 2; kind = "noul"
-            options = ["false: no, the statement does not hold", "true: yes, the statement holds"]
+            let criteria = question.booleanCriteria ?? .init()
+            options = ["false: \(criteria.falseDescription)", "true: \(criteria.trueDescription)"]
         }
         guard options.count <= 255 else {
             throw DecisionError.capacityExceeded("Laya supports at most 255 options per question.")

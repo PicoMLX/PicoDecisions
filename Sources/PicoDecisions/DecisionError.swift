@@ -29,6 +29,15 @@ extension DecisionRequest {
             guard !question.instructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw DecisionError.invalidRequest("Question \(question.id) needs instructions.")
             }
+            if let criteria = question.booleanCriteria {
+                guard case .boolean = question.kind else {
+                    throw DecisionError.invalidRequest("Boolean criteria require a boolean question.")
+                }
+                guard !criteria.falseDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      !criteria.trueDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw DecisionError.invalidRequest("Boolean criteria need nonblank false and true descriptions.")
+                }
+            }
             switch question.kind {
             case .choice(let options):
                 guard !options.isEmpty,
