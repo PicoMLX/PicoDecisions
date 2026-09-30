@@ -22,13 +22,18 @@ jobs:
         platform: [device, simulator]
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
-      PICODECISIONS_DERIVED_DATA_PATH: ${{ runner.temp }}/picodecisions-ios-${{ matrix.platform }}
-      PICODECISIONS_PACKAGE_CACHE_PATH: ${{ runner.temp }}/picodecisions-ios-packages
       PICODECISIONS_BUILD_JOBS: 2
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Configure build paths
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          printf '%s\n' "PICODECISIONS_DERIVED_DATA_PATH=$RUNNER_TEMP/picodecisions-ios-$PLATFORM" \
+            "PICODECISIONS_PACKAGE_CACHE_PATH=$RUNNER_TEMP/picodecisions-ios-packages" >> "$GITHUB_ENV"
       - uses: actions/cache@v4
         with:
           path: ${{ env.PICODECISIONS_PACKAGE_CACHE_PATH }}
