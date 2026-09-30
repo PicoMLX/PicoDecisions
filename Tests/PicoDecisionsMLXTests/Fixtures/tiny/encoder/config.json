@@ -1,0 +1,18 @@
+{
+  "vocab_size": 261,
+  "hidden_size": 16,
+  "intermediate_size": 24,
+  "num_hidden_layers": 3,
+  "num_attention_heads": 2,
+  "local_attention": 128,
+  "max_position_embeddings": 512,
+  "model_type": "modernbert",
+  "rope_parameters": {
+    "full_attention": {
+      "rope_theta": 160000.0
+    },
+    "sliding_attention": {
+      "rope_theta": 10000.0
+    }
+  }
+}

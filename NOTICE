@@ -1,0 +1,25 @@
+PicoDecisions
+Copyright 2026 PicoDecisions contributors
+
+The Laya inference implementation adapts software from:
+
+Laya, by Convai Innovations and contributors (Apache-2.0)
+https://github.com/NandhaKishorM/laya
+Reference revision: 6a5819129eb220570792e417e49723d697efd76f
+
+laya-mlx, Copyright 2026 laya-mlx contributors (Apache-2.0)
+https://github.com/mizorewww/laya-mlx
+Reference revision: fc1df62828a3fedf4d8229fdac1cbd85f1cdf337
+
+Prompt construction, calibration, result processing, and the neural architecture
+were adapted to Swift. The architecture follows Laya and Hugging Face ModernBERT.
+PicoDecisions is an independent implementation. Model weights are distributed
+separately by their respective authors and retain their original licenses.
+
+The multilingual validation fixture is adapted from laya-coreml (Apache-2.0),
+Copyright 2026 laya-coreml contributors.
+https://github.com/mizorewww/laya-coreml
+Reference revision: 12b7501583c7f03a6b2e49ebe118a2c6302505b9
+The source fixture was generated with original Laya on PyTorch MPS in float32.
+Changes: serialized states, ordered question arrays, and exclusion of the custom
+structured-criteria case not represented by PicoDecisions' boolean API.
