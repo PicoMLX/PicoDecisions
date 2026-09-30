@@ -15,6 +15,7 @@ Optional paths and limits:
                                   (default: DerivedData/ios-device or ios-simulator)
   PICODECISIONS_PACKAGE_CACHE_PATH Xcode source-package cache
   PICODECISIONS_BUILD_JOBS         Compiler parallelism (default: 2)
+  PICODECISIONS_TRUST_PACKAGE_PLUGINS Set to 1 after reviewing resolved plugins
 USAGE
 }
 
@@ -50,6 +51,9 @@ args=(build -scheme PicoDecisionsMLX -configuration Debug
     ENABLE_CODE_COVERAGE=NO CLANG_ENABLE_CODE_COVERAGE=NO CLANG_COVERAGE_MAPPING=NO)
 if [ -n "${PICODECISIONS_PACKAGE_CACHE_PATH:-}" ]; then
     args+=(-clonedSourcePackagesDirPath "$PICODECISIONS_PACKAGE_CACHE_PATH")
+fi
+if [ "${PICODECISIONS_TRUST_PACKAGE_PLUGINS:-0}" = 1 ]; then
+    args+=(-skipPackagePluginValidation)
 fi
 # Xcode locates the installed Metal compiler; this compile check never needs a GPU.
 exec xcodebuild "${args[@]}"

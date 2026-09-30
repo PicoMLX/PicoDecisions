@@ -45,6 +45,13 @@ Apple documents this command in
 [downloading and installing additional Xcode components](https://developer.apple.com/documentation/xcode/downloading-and-installing-additional-xcode-components).
 The local script leaves compiler discovery to Xcode and does not install components.
 
+Xcode may also ask to trust dependency build plugins on a fresh checkout. CI
+explicitly sets `PICODECISIONS_TRUST_PACKAGE_PLUGINS=1` for the reviewed, resolved
+dependencies. This adds command-scoped `-skipPackagePluginValidation`; it does not
+change Xcode's global settings. The pinned MLX `CudaBuild` plugin returns no build
+commands on Apple platforms. Local builds keep Xcode's plugin validation enabled
+unless the caller explicitly sets that variable after reviewing the plugins.
+
 ## GitHub Actions
 
 The **iOS library builds** workflow runs on pushes and pull requests. Its device

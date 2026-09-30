@@ -23,6 +23,8 @@ jobs:
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       PICODECISIONS_BUILD_JOBS: 2
+      # The resolved MLX CudaBuild plugin returns no commands on Apple platforms.
+      PICODECISIONS_TRUST_PACKAGE_PLUGINS: 1
     steps:
       - uses: actions/checkout@v4
         with:
