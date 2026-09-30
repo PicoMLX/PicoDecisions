@@ -175,6 +175,11 @@ SmartToolSelection/PicoCore can supply candidates, but consuming-application
 integration and representative retrieval evaluation remain future work.
 See the [implementation plan](Docs/ImplementationPlan.md).
 
+Applications can apply `ToolDecisionAcceptancePolicy` after selection to defer
+uncertain recommendations using explicit probability and margin thresholds.
+It preserves the raw answer and distinguishes abstention from no match; it
+does not authorize execution. See the [routing policy guide](Docs/ToolRouting.md).
+
 ## Run the demo and measurements
 
 On an Apple silicon Mac with Xcode and its Metal compiler, run:

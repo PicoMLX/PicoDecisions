@@ -51,6 +51,12 @@ IDs, validates outputs, skips empty candidate sets, and keeps retrieval scores
 as metadata separate from model probabilities. Callers own thresholds, argument
 collection, authorization, execution, and fallback.
 
+`ToolDecisionAcceptancePolicy` optionally defers uncertain recommendations using
+explicit selected-probability and runner-up-margin thresholds. It preserves raw
+answers and keeps accepted no match separate from abstention. See
+[ToolRouting.md](ToolRouting.md); application-specific threshold validation remains
+outstanding.
+
 Catalog retrieval remains in SmartToolSelection / PicoCore. Wiring the adapter into
 a consuming application is still outstanding. The included handwritten routing
 dataset exercises evaluation mechanics; its candidate ranks are supplied manually.
