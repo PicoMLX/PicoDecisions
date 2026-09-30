@@ -14,7 +14,10 @@ struct RoutingDataset: Decodable {
         for item in cases {
             guard !item.id.isEmpty, item.candidates.count <= maximumCandidates,
                   Set(item.expectedToolIDs).count == item.expectedToolIDs.count,
-                  item.expectedToolIDs.allSatisfy({ !$0.isEmpty && $0 != ToolDecisionSelector.noMatchID }) else {
+                  item.expectedToolIDs.allSatisfy({
+                      !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                      && $0 != ToolDecisionSelector.noMatchID
+                  }) else {
                 throw CLIError.usage("Invalid case ID, candidate count, or expected tool IDs in \(item.id).")
             }
             try DecisionRequest(state: item.state, questions: [.init(id: item.id,

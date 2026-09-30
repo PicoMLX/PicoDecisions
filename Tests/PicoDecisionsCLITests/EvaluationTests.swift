@@ -96,7 +96,21 @@ import Testing
     let valid = RoutingDataset(name: "test", description: "test", cases: [.init(id: "missing",
         state: "Find it", expectedToolIDs: ["missing-tool"], candidates: [])])
     try valid.validate(maximumCandidates: 8)
+    for expectedToolIDs in [[], [" weather "]] {
+        let dataset = RoutingDataset(name: "test", description: "test", cases: [.init(id: "valid",
+            state: "Check the weather", expectedToolIDs: expectedToolIDs,
+            candidates: [.init(id: " weather ", description: "Get the weather", retrievalScore: nil)])])
+        try dataset.validate(maximumCandidates: 8)
+    }
     let invalid = RoutingDataset(name: "test", description: "test", cases: [.init(id: "bad",
         state: "Find it", expectedToolIDs: ["__pico_no_match__"], candidates: [])])
     #expect(throws: CLIError.self) { try invalid.validate(maximumCandidates: 8) }
+}
+
+@Test(arguments: [[""], [" "], ["\t"], ["\n"], [" \t\r\n "], ["\u{00A0}"], ["weather", " "]])
+func datasetRejectsBlankExpectedToolIDs(expectedToolIDs: [String]) throws {
+    let dataset = RoutingDataset(name: "test", description: "test", cases: [.init(id: "bad-label",
+        state: "Check the weather", expectedToolIDs: expectedToolIDs,
+        candidates: [.init(id: "weather", description: "Get the weather", retrievalScore: nil)])])
+    #expect(throws: CLIError.self) { try dataset.validate(maximumCandidates: 8) }
 }
