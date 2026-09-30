@@ -49,6 +49,76 @@ import PicoDecisions
                                                 config: config, vocabularySize: 261, policy: .truncateState).first)
         #expect(truncated.ids == full.ids)
         #expect(truncated.markers == full.markers)
+        #expect(truncated.inputDiagnostics?.state == .init(
+            originalTokenCount: available + 1, retainedTokenCount: available))
+        #expect(truncated.inputDiagnostics?.state.wasTruncated == true)
+        #expect(full.inputDiagnostics?.state.wasTruncated == false)
+    }
+
+    @Test func reportsUntruncatedNormalizedComponentsAndPropagatesToResult() throws {
+        let config = try Self.configuration()
+        let tokenizer = ByteTokenizer()
+        let request = Self.request(state: "hello[MASK]world", criteria: .init(
+            falseDescription: "keep", trueDescription: "act"))
+        let item = try #require(prepareLaya(request, tokenizer: tokenizer, config: config,
+                                          vocabularySize: 261, policy: .reject).first)
+        let diagnostics = try #require(item.inputDiagnostics)
+        #expect(!diagnostics.wasTruncated)
+        #expect(diagnostics.state == .init(originalTokenCount: 11, retainedTokenCount: 11))
+        #expect(diagnostics.instructions == .init(originalTokenCount: 22, retainedTokenCount: 22))
+        #expect(diagnostics.options == [
+            .init(optionID: "false", tokens: .init(originalTokenCount: 12, retainedTokenCount: 12)),
+            .init(optionID: "true", tokens: .init(originalTokenCount: 10, retainedTokenCount: 10))
+        ])
+        // Four CLS/SEP tokens and one MASK per option are structural.
+        #expect(item.ids.count == 11 + 22 + 12 + 10 + 4 + 2)
+        let result = try layaResult(item, logits: [0, 1], action: [1, 0], config: config)
+        #expect(result.inputDiagnostics == diagnostics)
+        #expect(result.inputTokenCount == item.ids.count)
+    }
+
+    @Test func reportsOptionPrefixLimitWithStableChoiceIDsUnderRejectPolicy() throws {
+        let config = try Self.configuration()
+        let tokenizer = ByteTokenizer()
+        let request = DecisionRequest(state: "state", questions: [.init(id: "choice", instructions: "Pick.",
+            kind: .choice(options: [.init(id: "first", description: String(repeating: "x", count: 70)),
+                                     .init(id: "second", description: "short")]))])
+        let item = try #require(prepareLaya(request, tokenizer: tokenizer, config: config,
+                                          vocabularySize: 261, policy: .reject).first)
+        let diagnostics = try #require(item.inputDiagnostics)
+        #expect(diagnostics.wasTruncated)
+        #expect(!diagnostics.state.wasTruncated)
+        #expect(!diagnostics.instructions.wasTruncated)
+        #expect(diagnostics.options == [
+            .init(optionID: "first", tokens: .init(originalTokenCount: 78, retainedTokenCount: 48)),
+            .init(optionID: "second", tokens: .init(originalTokenCount: 14, retainedTokenCount: 14))
+        ])
+        #expect(Int(item.markers[1] - item.markers[0]) == 49)
+    }
+
+    @Test func reportsFinalHeadRebudgetingAndInstructionTruncation() throws {
+        let config = try Self.configuration(headMaxLength: 64)
+        let tokenizer = ByteTokenizer()
+        let request = DecisionRequest(state: "state", questions: [.init(id: "score",
+            instructions: String(repeating: "i", count: 100),
+            kind: .score(levels: (0..<3).map { _ in String(repeating: "x", count: 70) }))])
+        let item = try #require(prepareLaya(request, tokenizer: tokenizer, config: config,
+                                          vocabularySize: 261, policy: .reject).first)
+        let diagnostics = try #require(item.inputDiagnostics)
+        #expect(diagnostics.instructions == .init(originalTokenCount: 116, retainedTokenCount: 16))
+        #expect(diagnostics.options == (0..<3).map {
+            .init(optionID: String($0), tokens: .init(originalTokenCount: 80, retainedTokenCount: 15))
+        })
+        #expect(diagnostics.wasTruncated)
+        #expect(!diagnostics.state.wasTruncated)
+        #expect(item.markers == [18, 34, 50])
+        var expected = [tokenizer.cls] + tokenizer.encode("score question: " + String(repeating: "i", count: 100)).prefix(16)
+            + [tokenizer.sep]
+        for index in 0..<3 {
+            expected += [tokenizer.mask] + tokenizer.encode(" level \(index): " + String(repeating: "x", count: 70)).prefix(15)
+        }
+        expected += [tokenizer.sep] + tokenizer.encode("state") + [tokenizer.sep]
+        #expect(item.ids == expected.map(Int32.init))
     }
 
     @Test func explicitDefaultBooleanCriteriaPreservePromptTokens() throws {

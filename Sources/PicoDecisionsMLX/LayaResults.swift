@@ -37,5 +37,6 @@ func layaResult(_ item: LayaPreparedQuestion, logits: [Float], action: [Float],
         confidence = max(p[1], 1 - p[1])
     }
     return DecisionResult(id: item.question.id, answer: answer, confidence: confidence,
-                          actProbability: act[0], inputTokenCount: item.ids.count)
+                          actProbability: act[0], inputTokenCount: item.ids.count,
+                          inputDiagnostics: item.inputDiagnostics)
 }

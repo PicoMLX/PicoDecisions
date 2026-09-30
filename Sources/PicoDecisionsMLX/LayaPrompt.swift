@@ -5,7 +5,8 @@ import Tokenizers
 
 /// Handling of state text that exceeds a checkpoint's context budget.
 public enum LayaInputPolicy: Sendable {
-    /// Fail so callers can shorten the state explicitly.
+    /// Fail when state exceeds its remaining budget. Instructions and options
+    /// still use upstream truncation limits; inspect result.inputDiagnostics.
     case reject
     /// Match upstream Laya by keeping the beginning of the state that fits.
     case truncateState
@@ -56,6 +57,7 @@ struct LayaPreparedQuestion: Sendable {
     let ids: [Int32]
     let markers: [Int32]
     let type: Int32
+    var inputDiagnostics: DecisionInputDiagnostics? = nil
 }
 
 func prepareLaya(_ request: DecisionRequest, tokenizer tok: any LayaTokenizing,
@@ -69,31 +71,40 @@ func prepareLaya(_ request: DecisionRequest, tokenizer tok: any LayaTokenizing,
         let type: Int32
         let kind: String
         let options: [String]
+        let optionIdentifiers: [String]
         switch question.kind {
         case .choice(let values):
             type = 0; kind = "choice"
             options = values.map { $0.description.isEmpty ? $0.id : "\($0.id): \($0.description)" }
+            optionIdentifiers = values.map(\.id)
         case .score(let values):
             type = 1; kind = "score"
             options = values.enumerated().map { "level \($0.offset): \($0.element)" }
+            optionIdentifiers = values.indices.map(String.init)
         case .boolean:
             type = 2; kind = "noul"
             let criteria = question.booleanCriteria ?? .init()
             options = ["false: \(criteria.falseDescription)", "true: \(criteria.trueDescription)"]
+            optionIdentifiers = ["false", "true"]
         }
         guard options.count <= 255 else {
             throw DecisionError.capacityExceeded("Laya supports at most 255 options per question.")
         }
         func clean(_ text: String) -> String { text.replacingOccurrences(of: tok.maskText, with: " ") }
         let instructions = tok.encode("\(kind) question: \(clean(question.instructions))")
-        var optionIDs = options.map { [tok.mask] + tok.encode(" " + clean($0)).prefix(48) }
+        let tokenizedOptions = options.map { text in
+            let tokens = tok.encode(" " + clean(text))
+            return (originalCount: tokens.count, ids: [tok.mask] + tokens.prefix(48))
+        }
+        var optionIDs = tokenizedOptions.map(\.ids)
         var budget = config.headMaxLength - optionIDs.reduce(0) { $0 + $1.count }
         if budget < 16 {
             let perOption = max(4, (config.headMaxLength - 16) / optionIDs.count)
             optionIDs = optionIDs.map { Array($0.prefix(perOption)) }
             budget = config.headMaxLength - optionIDs.reduce(0) { $0 + $1.count }
         }
-        var ids = [tok.cls] + instructions.prefix(max(8, budget)) + [tok.sep]
+        let retainedInstructions = instructions.prefix(max(8, budget))
+        var ids = [tok.cls] + retainedInstructions + [tok.sep]
         var markers: [Int32] = []
         for option in optionIDs {
             markers.append(Int32(ids.count))
@@ -107,11 +118,20 @@ func prepareLaya(_ request: DecisionRequest, tokenizer tok: any LayaTokenizing,
         if case .reject = policy, state.count > room {
             throw DecisionError.capacityExceeded("State for \(question.id) has \(state.count) tokens; only \(room) fit.")
         }
-        ids += state.prefix(room)
+        let retainedState = state.prefix(room)
+        ids += retainedState
         ids.append(tok.sep)
         guard ids.allSatisfy({ $0 >= 0 && $0 < vocabularySize && $0 <= Int32.max }) else {
             throw DecisionError.invalidCheckpoint("Tokenizer emitted an ID outside the encoder vocabulary.")
         }
-        return LayaPreparedQuestion(question: question, ids: ids.map(Int32.init), markers: markers, type: type)
+        let diagnostics = DecisionInputDiagnostics(
+            state: .init(originalTokenCount: state.count, retainedTokenCount: retainedState.count),
+            instructions: .init(originalTokenCount: instructions.count, retainedTokenCount: retainedInstructions.count),
+            options: optionIdentifiers.indices.map { index in
+                .init(optionID: optionIdentifiers[index], tokens: .init(
+                    originalTokenCount: tokenizedOptions[index].originalCount, retainedTokenCount: optionIDs[index].count - 1))
+            })
+        return LayaPreparedQuestion(question: question, ids: ids.map(Int32.init), markers: markers,
+                                    type: type, inputDiagnostics: diagnostics)
     }
 }

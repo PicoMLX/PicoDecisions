@@ -63,6 +63,8 @@ enum PicoDecisionsCommand {
                     let latency = try LatencyStatistics(samples)
                     workloads.append(.init(questionCount: count,
                         inputTokenCounts: first.compactMap(\.inputTokenCount),
+                        inputDiagnostics: first.allSatisfy { $0.inputDiagnostics != nil }
+                            ? first.compactMap(\.inputDiagnostics) : nil,
                         firstPredictionMilliseconds: firstTime, latency: latency,
                         questionsPerSecond: Double(count) * 1000 / latency.meanMilliseconds,
                         memory: Memory.snapshot()))
@@ -95,7 +97,8 @@ enum PicoDecisionsCommand {
                         latencyMilliseconds: milliseconds(sampleStart.duration(to: clock.now)),
                         inputTokenCount: selection.inputTokenCount, confidence: selection.confidence,
                         actProbability: selection.actProbability,
-                        policy: policy.map { RoutingPolicyOutcome($0.evaluate(selection)) }))
+                        policy: policy.map { RoutingPolicyOutcome($0.evaluate(selection)) },
+                        inputDiagnostics: selection.inputDiagnostics))
                 }
                 let snapshot = Memory.snapshot()
                 try write(EvaluationReport(runtime: runtime, checkpoint: checkpoint,

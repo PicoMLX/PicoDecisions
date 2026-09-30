@@ -64,6 +64,7 @@ struct RoutingOutcome: Encodable {
     let noMatchProbability: Double?
     let latencyMilliseconds: Double
     let inputTokenCount: Int?
+    let inputDiagnostics: DecisionInputDiagnostics?
     let confidence: Double?
     let actProbability: Double?
     /// Nil when no acceptance-policy flags were supplied; raw predictions remain above.
@@ -72,7 +73,8 @@ struct RoutingOutcome: Encodable {
     init(id: String, expectedToolIDs: [String], candidateIDs: [String], retrievalSelectedID: String?,
          selectedID: String?, candidateProbabilities: [PredictionReport.Probability],
          noMatchProbability: Double?, latencyMilliseconds: Double, inputTokenCount: Int?,
-         confidence: Double?, actProbability: Double?, policy: RoutingPolicyOutcome? = nil) {
+         confidence: Double?, actProbability: Double?, policy: RoutingPolicyOutcome? = nil,
+         inputDiagnostics: DecisionInputDiagnostics? = nil) {
         self.id = id
         self.expectedToolIDs = expectedToolIDs
         self.candidateIDs = candidateIDs
@@ -82,6 +84,7 @@ struct RoutingOutcome: Encodable {
         self.noMatchProbability = noMatchProbability
         self.latencyMilliseconds = latencyMilliseconds
         self.inputTokenCount = inputTokenCount
+        self.inputDiagnostics = inputDiagnostics
         self.confidence = confidence
         self.actProbability = actProbability
         self.policy = policy

@@ -87,12 +87,14 @@ struct PredictionReport: Encodable {
     let confidence: Double?
     let actProbability: Double?
     let inputTokenCount: Int?
+    let inputDiagnostics: DecisionInputDiagnostics?
 
     init(_ result: DecisionResult) {
         id = result.id
         confidence = result.confidence
         actProbability = result.actProbability
         inputTokenCount = result.inputTokenCount
+        inputDiagnostics = result.inputDiagnostics
         switch result.answer {
         case .choice(let selected, let values):
             kind = "choice"; selectedID = selected; expectedLevel = nil; probabilityTrue = nil
@@ -110,6 +112,7 @@ struct PredictionReport: Encodable {
 struct BenchmarkWorkload: Encodable {
     let questionCount: Int
     let inputTokenCounts: [Int]
+    let inputDiagnostics: [DecisionInputDiagnostics]?
     let firstPredictionMilliseconds: Double
     let latency: LatencyStatistics
     let questionsPerSecond: Double

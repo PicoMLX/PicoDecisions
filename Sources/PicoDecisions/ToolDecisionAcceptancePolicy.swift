@@ -66,7 +66,7 @@ public struct ToolDecisionAcceptancePolicy: Sendable, Equatable {
         if selection.candidateProbabilities.isEmpty {
             guard selection.selectedCandidate == nil, selection.noMatchProbability == nil,
                   selection.confidence == nil, selection.actProbability == nil,
-                  selection.inputTokenCount == nil else { return invalid() }
+                  selection.inputTokenCount == nil, selection.inputDiagnostics == nil else { return invalid() }
             return disposition(.acceptedNoMatch)
         }
 

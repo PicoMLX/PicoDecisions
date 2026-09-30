@@ -25,14 +25,15 @@ private let toolCandidates = [
 
 private func toolChoice(selectedID: String = "weather", probabilities: [OptionProbability]? = nil,
                         confidence: Double? = 0.42, actProbability: Double? = 0.8,
-                        inputTokenCount: Int? = 57) -> DecisionResult {
+                        inputTokenCount: Int? = 57,
+                        inputDiagnostics: DecisionInputDiagnostics? = nil) -> DecisionResult {
     DecisionResult(id: ToolDecisionSelector.questionID,
                    answer: .choice(selectedID: selectedID, probabilities: probabilities ?? [
                     .init(optionID: "weather", probability: 0.6),
                     .init(optionID: ToolDecisionSelector.noMatchID, probability: 0.1),
                     .init(optionID: "mcp.calendar/list_events", probability: 0.3)
                    ]), confidence: confidence, actProbability: actProbability,
-                   inputTokenCount: inputTokenCount)
+                   inputTokenCount: inputTokenCount, inputDiagnostics: inputDiagnostics)
 }
 
 @Test func toolDecisionPreservesIdentityAndKeepsRetrievalSeparate() async throws {
@@ -49,6 +50,7 @@ private func toolChoice(selectedID: String = "weather", probabilities: [OptionPr
     #expect(result.confidence == 0.42)
     #expect(result.actProbability == 0.8)
     #expect(result.inputTokenCount == 57)
+    #expect(result.inputDiagnostics == nil)
     let request = try #require(await model.requests.first)
     #expect(request.state == "Will it rain tomorrow?")
     let question = try #require(request.questions.first)
@@ -89,7 +91,25 @@ private func toolChoice(selectedID: String = "weather", probabilities: [OptionPr
     #expect(result.confidence == nil)
     #expect(result.actProbability == nil)
     #expect(result.inputTokenCount == nil)
+    #expect(result.inputDiagnostics == nil)
     #expect(await model.requests.isEmpty)
+}
+
+@Test(arguments: [false, true])
+func toolDecisionPreservesInputDiagnosticsThroughSelectionAndPolicy(truncated: Bool) async throws {
+    let diagnostics = DecisionInputDiagnostics(
+        state: .init(originalTokenCount: 10, retainedTokenCount: truncated ? 5 : 10),
+        instructions: .init(originalTokenCount: 20, retainedTokenCount: 20),
+        options: [.init(optionID: "weather", tokens: .init(originalTokenCount: 30, retainedTokenCount: 30)),
+                  .init(optionID: ToolDecisionSelector.noMatchID,
+                        tokens: .init(originalTokenCount: 8, retainedTokenCount: 8))])
+    let model = RecordingToolDecisionModel(results: [toolChoice(inputDiagnostics: diagnostics)])
+    let selection = try await ToolDecisionSelector(model: model).select(query: "Weather?", candidates: toolCandidates)
+    #expect(selection.inputDiagnostics == diagnostics)
+    #expect(selection.inputDiagnostics?.wasTruncated == truncated)
+    let disposition = try ToolDecisionAcceptancePolicy(minimumProbability: 0.9, minimumMargin: 0.1).evaluate(selection)
+    #expect(disposition.status == .abstained)
+    #expect(disposition.selection.inputDiagnostics == diagnostics)
 }
 
 @Test(arguments: [0, -1, 255, Int.max])

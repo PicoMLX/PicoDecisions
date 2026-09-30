@@ -29,6 +29,20 @@ public struct ToolDecisionSelection: Sendable, Equatable {
     public let confidence: Double?
     public let actProbability: Double?
     public let inputTokenCount: Int?
+    /// Preserves the model's diagnostics; nil when inference was skipped or unavailable.
+    public let inputDiagnostics: DecisionInputDiagnostics?
+
+    init(selectedCandidate: ToolDecisionCandidate?, candidateProbabilities: [OptionProbability],
+         noMatchProbability: Double?, confidence: Double?, actProbability: Double?,
+         inputTokenCount: Int?, inputDiagnostics: DecisionInputDiagnostics? = nil) {
+        self.selectedCandidate = selectedCandidate
+        self.candidateProbabilities = candidateProbabilities
+        self.noMatchProbability = noMatchProbability
+        self.confidence = confidence
+        self.actProbability = actProbability
+        self.inputTokenCount = inputTokenCount
+        self.inputDiagnostics = inputDiagnostics
+    }
 }
 
 public enum ToolDecisionError: Error, Sendable, Equatable, LocalizedError {
@@ -72,7 +86,7 @@ public struct ToolDecisionSelector: Sendable {
         guard !candidates.isEmpty else {
             return ToolDecisionSelection(selectedCandidate: nil, candidateProbabilities: [],
                                          noMatchProbability: nil, confidence: nil,
-                                         actProbability: nil, inputTokenCount: nil)
+                                         actProbability: nil, inputTokenCount: nil, inputDiagnostics: nil)
         }
         guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw DecisionError.invalidRequest("A tool decision needs a nonempty query.")
@@ -136,6 +150,6 @@ public struct ToolDecisionSelector: Sendable {
             },
             noMatchProbability: probabilityByID[Self.noMatchID],
             confidence: result.confidence, actProbability: result.actProbability,
-            inputTokenCount: result.inputTokenCount)
+            inputTokenCount: result.inputTokenCount, inputDiagnostics: result.inputDiagnostics)
     }
 }
