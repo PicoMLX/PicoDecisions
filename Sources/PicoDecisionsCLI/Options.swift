@@ -21,6 +21,8 @@ struct Options {
     let stateFile: URL?
     let dataset: URL?
     let maximumCandidates: Int
+    let minimumProbability: Double?
+    let minimumMargin: Double?
 
     static let help = """
     Usage: picodecisions <demo|benchmark|evaluate> --model DIRECTORY [options]
@@ -38,6 +40,10 @@ struct Options {
     evaluate options:
       --dataset FILE             Required labeled candidate-routing JSON dataset
       --max-candidates N          Candidate cap, 1...254 (default: 8)
+      --minimum-probability P     Optional selected-answer probability gate, 0...1
+      --minimum-margin M          Optional selected-minus-runner-up gate, 0...1
+                                 No flags: policy disabled. One flag: other gate is 0.
+                                 A zero gate is disabled; thresholds are not calibrated.
 
     Requires local checkpoint files and a Metal-capable Apple silicon Mac.
     No model files are downloaded. Builds can download SwiftPM dependencies.
@@ -51,7 +57,9 @@ struct Options {
         self.command = command
         var allowed: Set<String> = ["--model", "--precision", "--batch-size", "--output"]
         if command == .benchmark { allowed.formUnion(["--iterations", "--warmup", "--questions", "--state-file"]) }
-        if command == .evaluate { allowed.formUnion(["--dataset", "--max-candidates"]) }
+        if command == .evaluate {
+            allowed.formUnion(["--dataset", "--max-candidates", "--minimum-probability", "--minimum-margin"])
+        }
         var values: [String: String] = [:]
         var index = 1
         while index < arguments.count {
@@ -69,6 +77,13 @@ struct Options {
             }
             return value
         }
+        func threshold(_ key: String) throws -> Double? {
+            guard let text = values[key] else { return nil }
+            guard let value = Double(text), value.isFinite, (0...1).contains(value) else {
+                throw CLIError.usage("\(key) must be a finite number in 0...1.")
+            }
+            return value
+        }
         guard let model = values["--model"], !model.isEmpty else {
             throw CLIError.usage("--model DIRECTORY is required.")
         }
@@ -81,6 +96,8 @@ struct Options {
         iterations = try integer("--iterations", default: 20, range: 1...100_000)
         warmup = try integer("--warmup", default: 3, range: 0...10_000)
         maximumCandidates = try integer("--max-candidates", default: 8, range: 1...254)
+        minimumProbability = try threshold("--minimum-probability")
+        minimumMargin = try threshold("--minimum-margin")
         let counts = (values["--questions"] ?? "1,8,20").split(separator: ",", omittingEmptySubsequences: false)
         let parsed = counts.compactMap { Int($0) }
         guard parsed.count == counts.count, !parsed.isEmpty,

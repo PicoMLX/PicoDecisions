@@ -76,6 +76,12 @@ enum PicoDecisionsCommand {
                     throw CLIError.usage("evaluate requires --dataset FILE.")
                 }
                 let selector = try ToolDecisionSelector(model: model, maximumCandidates: options.maximumCandidates)
+                let policyConfiguration = RoutingPolicyConfiguration(
+                    minimumProbability: options.minimumProbability, minimumMargin: options.minimumMargin)
+                let policy = try policyConfiguration.map {
+                    try ToolDecisionAcceptancePolicy(minimumProbability: $0.minimumProbability,
+                                                     minimumMargin: $0.minimumMargin)
+                }
                 Memory.peakMemory = 0
                 var outcomes: [RoutingOutcome] = []
                 for item in dataset.cases {
@@ -88,7 +94,8 @@ enum PicoDecisionsCommand {
                         noMatchProbability: selection.noMatchProbability,
                         latencyMilliseconds: milliseconds(sampleStart.duration(to: clock.now)),
                         inputTokenCount: selection.inputTokenCount, confidence: selection.confidence,
-                        actProbability: selection.actProbability))
+                        actProbability: selection.actProbability,
+                        policy: policy.map { RoutingPolicyOutcome($0.evaluate(selection)) }))
                 }
                 let snapshot = Memory.snapshot()
                 try write(EvaluationReport(runtime: runtime, checkpoint: checkpoint,
@@ -96,6 +103,8 @@ enum PicoDecisionsCommand {
                     datasetName: dataset.name, datasetDescription: dataset.description,
                     datasetSHA256: datasetFingerprint, loadMilliseconds: loadTime,
                     maximumCandidates: options.maximumCandidates, metrics: try RoutingMetrics(outcomes),
+                    policyConfiguration: policyConfiguration,
+                    policyMetrics: policy == nil ? nil : RoutingPolicyMetrics(outcomes),
                     latency: try LatencyStatistics(outcomes.map(\.latencyMilliseconds)),
                     memory: .init(activeBytes: snapshot.activeMemory, cacheBytes: snapshot.cacheMemory,
                                   peakActiveBytes: snapshot.peakMemory), outcomes: outcomes), to: options.output)

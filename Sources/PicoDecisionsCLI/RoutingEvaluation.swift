@@ -66,6 +66,26 @@ struct RoutingOutcome: Encodable {
     let inputTokenCount: Int?
     let confidence: Double?
     let actProbability: Double?
+    /// Nil when no acceptance-policy flags were supplied; raw predictions remain above.
+    let policy: RoutingPolicyOutcome?
+
+    init(id: String, expectedToolIDs: [String], candidateIDs: [String], retrievalSelectedID: String?,
+         selectedID: String?, candidateProbabilities: [PredictionReport.Probability],
+         noMatchProbability: Double?, latencyMilliseconds: Double, inputTokenCount: Int?,
+         confidence: Double?, actProbability: Double?, policy: RoutingPolicyOutcome? = nil) {
+        self.id = id
+        self.expectedToolIDs = expectedToolIDs
+        self.candidateIDs = candidateIDs
+        self.retrievalSelectedID = retrievalSelectedID
+        self.selectedID = selectedID
+        self.candidateProbabilities = candidateProbabilities
+        self.noMatchProbability = noMatchProbability
+        self.latencyMilliseconds = latencyMilliseconds
+        self.inputTokenCount = inputTokenCount
+        self.confidence = confidence
+        self.actProbability = actProbability
+        self.policy = policy
+    }
 
     func correct(_ selection: String?) -> Bool {
         if expectedToolIDs.isEmpty { return selection == nil }
@@ -93,6 +113,9 @@ struct RoutingMetrics: Encodable {
     let falseAcceptanceRate: Double?
     let calibrationCaseCount: Int
     let expectedCalibrationError: Double?
+    let inferredCaseCount: Int
+    let inferredNoMatchCaseCount: Int
+    let inferredFalseAcceptanceRate: Double?
 
     init(_ outcomes: [RoutingOutcome]) throws {
         guard !outcomes.isEmpty else { throw CLIError.usage("Cannot score an empty evaluation.") }
@@ -113,6 +136,12 @@ struct RoutingMetrics: Encodable {
             : Double(selectable.filter { $0.selectedID == nil }.count) / Double(selectable.count)
         falseAcceptanceRate = noMatch.isEmpty ? nil
             : Double(noMatch.filter { $0.selectedID != nil }.count) / Double(noMatch.count)
+        let inferred = outcomes.filter { !$0.candidateIDs.isEmpty }
+        let inferredNoMatch = inferred.filter { $0.expectedToolIDs.isEmpty }
+        inferredCaseCount = inferred.count
+        inferredNoMatchCaseCount = inferredNoMatch.count
+        inferredFalseAcceptanceRate = inferredNoMatch.isEmpty ? nil
+            : Double(inferredNoMatch.filter { $0.selectedID != nil }.count) / Double(inferredNoMatch.count)
 
         // Calibration uses the selected answer probability, not entropy confidence.
         // Empty candidate sets have no model distribution and are excluded.
@@ -139,8 +168,83 @@ struct RoutingMetrics: Encodable {
     }
 }
 
+struct RoutingPolicyConfiguration: Encodable {
+    let minimumProbability: Double
+    let minimumMargin: Double
+    let minimumProbabilitySource: String
+    let minimumMarginSource: String
+
+    init?(minimumProbability: Double?, minimumMargin: Double?) {
+        guard minimumProbability != nil || minimumMargin != nil else { return nil }
+        self.minimumProbability = minimumProbability ?? 0
+        self.minimumMargin = minimumMargin ?? 0
+        minimumProbabilitySource = minimumProbability == nil ? "defaultZero" : "commandLine"
+        minimumMarginSource = minimumMargin == nil ? "defaultZero" : "commandLine"
+    }
+}
+
+struct RoutingPolicyOutcome: Encodable {
+    let status: String
+    let reasons: [String]
+    let selectedProbability: Double?
+    let probabilityMargin: Double?
+
+    init(_ disposition: ToolDecisionDisposition) {
+        status = disposition.status.rawValue
+        reasons = disposition.reasons.map(\.rawValue)
+        selectedProbability = disposition.selectedProbability
+        probabilityMargin = disposition.probabilityMargin
+    }
+
+    var accepted: Bool { status == "acceptedTool" || status == "acceptedNoMatch" }
+}
+
+/// Every denominator excludes deterministic empty-candidate results.
+struct RoutingPolicyMetrics: Encodable {
+    let inferredCaseCount: Int
+    let acceptedCaseCount: Int
+    let acceptedToolCaseCount: Int
+    let acceptedNoMatchCaseCount: Int
+    let abstainedCaseCount: Int
+    let coverage: Double?
+    let abstentionRate: Double?
+    let decisionAccuracy: Double?
+    let candidateRelativeAccuracy: Double?
+    let acceptedAccuracy: Double?
+    let acceptedCandidateRelativeAccuracy: Double?
+    let inferredNoMatchCaseCount: Int
+    let falseAcceptanceRate: Double?
+
+    init(_ outcomes: [RoutingOutcome]) {
+        let inferred = outcomes.filter { !$0.candidateIDs.isEmpty }
+        let accepted = inferred.filter { $0.policy?.accepted == true }
+        let abstained = inferred.filter { $0.policy?.status == "abstained" }
+        inferredCaseCount = inferred.count
+        acceptedCaseCount = accepted.count
+        acceptedToolCaseCount = accepted.filter { $0.policy?.status == "acceptedTool" }.count
+        acceptedNoMatchCaseCount = accepted.filter { $0.policy?.status == "acceptedNoMatch" }.count
+        abstainedCaseCount = abstained.count
+        let correct = accepted.filter { $0.correct($0.selectedID) }.count
+        let candidateCorrect = accepted.filter { $0.correctGivenCandidates($0.selectedID) }.count
+        coverage = Self.rate(accepted.count, inferred.count)
+        abstentionRate = Self.rate(abstained.count, inferred.count)
+        // An abstention is never credited as a correct no match.
+        decisionAccuracy = Self.rate(correct, inferred.count)
+        candidateRelativeAccuracy = Self.rate(candidateCorrect, inferred.count)
+        acceptedAccuracy = Self.rate(correct, accepted.count)
+        acceptedCandidateRelativeAccuracy = Self.rate(candidateCorrect, accepted.count)
+        let noMatch = inferred.filter { $0.expectedToolIDs.isEmpty }
+        inferredNoMatchCaseCount = noMatch.count
+        falseAcceptanceRate = Self.rate(noMatch.filter { $0.policy?.status == "acceptedTool" }.count, noMatch.count)
+    }
+
+    private static func rate(_ count: Int, _ denominator: Int) -> Double? {
+        denominator == 0 ? nil : Double(count) / Double(denominator)
+    }
+}
+
 struct EvaluationReport: Encodable {
-    let schemaVersion = 1
+    let schemaVersion = 2
     let timestamp = Date()
     let runtime: RuntimeMetadata
     let checkpoint: CheckpointMetadata
@@ -152,6 +256,8 @@ struct EvaluationReport: Encodable {
     let loadMilliseconds: Double
     let maximumCandidates: Int
     let metrics: RoutingMetrics
+    let policyConfiguration: RoutingPolicyConfiguration?
+    let policyMetrics: RoutingPolicyMetrics?
     let latency: LatencyStatistics
     let memory: MLXMemoryReport
     let outcomes: [RoutingOutcome]

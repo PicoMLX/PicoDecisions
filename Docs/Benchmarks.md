@@ -135,6 +135,11 @@ arguments and apply its authorization, fallback, and escalation rules.
 
 ## Reuse builds
 
+To measure caller-chosen acceptance thresholds, see
+[routing policy evaluation](RoutingPolicyEvaluation.md). It reports coverage and
+accepted-answer accuracy separately from raw accuracy and ECE, and preserves
+abstentions as distinct from no-match answers.
+
 `PICODECISIONS_DERIVED_DATA_PATH` overrides the ignored `DerivedData` output
 directory. `PICODECISIONS_PACKAGE_CACHE_PATH` selects an Xcode package cache.
 `PICODECISIONS_BUILD_JOBS` controls compiler parallelism (default: two jobs).

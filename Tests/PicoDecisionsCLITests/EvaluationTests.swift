@@ -1,4 +1,5 @@
 import Foundation
+import PicoDecisions
 import Testing
 @testable import PicoDecisionsCLI
 
@@ -32,6 +33,9 @@ import Testing
     #expect(metrics.selectableMatchingCaseCount == 2)
     #expect(metrics.falseRejectionRate == 0)
     #expect(metrics.falseAcceptanceRate == 0.5)
+    #expect(metrics.inferredCaseCount == 4)
+    #expect(metrics.inferredNoMatchCaseCount == 1)
+    #expect(metrics.inferredFalseAcceptanceRate == 1)
     #expect(metrics.expectedCalibrationError == nil)
 }
 
@@ -113,4 +117,195 @@ func datasetRejectsBlankExpectedToolIDs(expectedToolIDs: [String]) throws {
         state: "Check the weather", expectedToolIDs: expectedToolIDs,
         candidates: [.init(id: "weather", description: "Get the weather", retrievalScore: nil)])])
     #expect(throws: CLIError.self) { try dataset.validate(maximumCandidates: 8) }
+}
+
+@Test func policyFlagsAreOptionalAndRecordEffectiveThresholdProvenance() throws {
+    let base = ["evaluate", "--model", "tiny", "--dataset", "cases.json"]
+    let disabled = try Options(base)
+    #expect(disabled.minimumProbability == nil)
+    #expect(disabled.minimumMargin == nil)
+    #expect(RoutingPolicyConfiguration(minimumProbability: disabled.minimumProbability,
+                                       minimumMargin: disabled.minimumMargin) == nil)
+
+    let probabilityOnly = try Options(base + ["--minimum-probability", "0.8"])
+    let probabilityConfiguration = try #require(RoutingPolicyConfiguration(
+        minimumProbability: probabilityOnly.minimumProbability, minimumMargin: probabilityOnly.minimumMargin))
+    #expect(probabilityConfiguration.minimumProbability == 0.8)
+    #expect(probabilityConfiguration.minimumMargin == 0)
+    #expect(probabilityConfiguration.minimumProbabilitySource == "commandLine")
+    #expect(probabilityConfiguration.minimumMarginSource == "defaultZero")
+
+    let marginOnly = try Options(base + ["--minimum-margin", "0.25"])
+    let marginConfiguration = try #require(RoutingPolicyConfiguration(
+        minimumProbability: marginOnly.minimumProbability, minimumMargin: marginOnly.minimumMargin))
+    #expect(marginConfiguration.minimumProbability == 0)
+    #expect(marginConfiguration.minimumMargin == 0.25)
+    #expect(marginConfiguration.minimumProbabilitySource == "defaultZero")
+    #expect(marginConfiguration.minimumMarginSource == "commandLine")
+
+    for value in ["0", "1"] {
+        let boundaries = try Options(base + ["--minimum-probability", value, "--minimum-margin", value])
+        #expect(boundaries.minimumProbability == Double(value))
+        #expect(boundaries.minimumMargin == Double(value))
+    }
+}
+
+@Test(arguments: ["nan", "NaN", "inf", "-inf", "infinity", "1e309", "-0.01", "1.01", "text", ""])
+func rejectsInvalidPolicyThresholds(value: String) {
+    for flag in ["--minimum-probability", "--minimum-margin"] {
+        #expect(throws: CLIError.self) {
+            try Options(["evaluate", "--model", "tiny", "--dataset", "cases.json", flag, value])
+        }
+    }
+}
+
+@Test func rejectsDuplicateIncompleteAndUnrelatedPolicyFlags() {
+    for flag in ["--minimum-probability", "--minimum-margin"] {
+        let invalid = [
+            ["evaluate", "--model", "tiny", "--dataset", "cases.json", flag, "0.5", flag, "0.6"],
+            ["evaluate", "--model", "tiny", "--dataset", "cases.json", flag],
+            ["evaluate", "--model", "tiny", flag, "0.5"],
+            ["demo", "--model", "tiny", flag, "0.5"],
+            ["benchmark", "--model", "tiny", flag, "0.5"]
+        ]
+        for arguments in invalid { #expect(throws: CLIError.self) { try Options(arguments) } }
+    }
+}
+
+@Test func inferredFalseAcceptanceExcludesDeterministicEmptyCandidates() throws {
+    let outcomes = [
+        RoutingOutcome(id: "wrong-tool", expectedToolIDs: [], candidateIDs: ["b"], retrievalSelectedID: "b",
+            selectedID: "b", candidateProbabilities: [.init(id: "b", probability: 0.9)], noMatchProbability: 0.1,
+            latencyMilliseconds: 1, inputTokenCount: 5, confidence: nil, actProbability: nil),
+        RoutingOutcome(id: "no-match", expectedToolIDs: [], candidateIDs: ["b"], retrievalSelectedID: "b",
+            selectedID: nil, candidateProbabilities: [.init(id: "b", probability: 0.1)], noMatchProbability: 0.9,
+            latencyMilliseconds: 1, inputTokenCount: 5, confidence: nil, actProbability: nil),
+        RoutingOutcome(id: "empty", expectedToolIDs: [], candidateIDs: [], retrievalSelectedID: nil,
+            selectedID: nil, candidateProbabilities: [], noMatchProbability: nil,
+            latencyMilliseconds: 0, inputTokenCount: nil, confidence: nil, actProbability: nil)
+    ]
+    let metrics = try RoutingMetrics(outcomes)
+    #expect(metrics.noMatchCaseCount == 3)
+    #expect(metrics.falseAcceptanceRate == 1.0 / 3)
+    #expect(metrics.inferredCaseCount == 2)
+    #expect(metrics.inferredNoMatchCaseCount == 2)
+    #expect(metrics.inferredFalseAcceptanceRate == 0.5)
+}
+
+@Test func policyMetricsSeparateAbstentionFromAcceptedNoMatch() async throws {
+    let policy = try ToolDecisionAcceptancePolicy(minimumProbability: 0.8, minimumMargin: 0.1)
+    let outcomes = try await [
+        evaluationOutcome("correct-tool", expected: ["a"], candidates: ["a"], selected: "a", toolProbability: 0.9, policy: policy),
+        evaluationOutcome("correct-no-match", expected: [], candidates: ["b"], selected: nil, toolProbability: 0.1, policy: policy),
+        evaluationOutcome("retrieval-miss", expected: ["a"], candidates: ["b"], selected: nil, toolProbability: 0.1, policy: policy),
+        evaluationOutcome("abstain-match", expected: ["a"], candidates: ["a"], selected: "a", toolProbability: 0.6, policy: policy),
+        evaluationOutcome("abstain-no-match", expected: [], candidates: ["b"], selected: nil, toolProbability: 0.4, policy: policy),
+        evaluationOutcome("false-accept", expected: [], candidates: ["b"], selected: "b", toolProbability: 0.95, policy: policy),
+        evaluationOutcome("empty-no-match", expected: [], candidates: [], selected: nil, toolProbability: 0, policy: policy),
+        evaluationOutcome("empty-missing-tool", expected: ["a"], candidates: [], selected: nil, toolProbability: 0, policy: policy)
+    ]
+    let metrics = RoutingPolicyMetrics(outcomes)
+    #expect(metrics.inferredCaseCount == 6)
+    #expect(metrics.acceptedCaseCount == 4)
+    #expect(metrics.acceptedToolCaseCount == 2)
+    #expect(metrics.acceptedNoMatchCaseCount == 2)
+    #expect(metrics.abstainedCaseCount == 2)
+    #expect(metrics.coverage == 2.0 / 3)
+    #expect(metrics.abstentionRate == 1.0 / 3)
+    #expect(metrics.decisionAccuracy == 1.0 / 3)
+    #expect(metrics.candidateRelativeAccuracy == 0.5)
+    #expect(metrics.acceptedAccuracy == 0.5)
+    #expect(metrics.acceptedCandidateRelativeAccuracy == 0.75)
+    #expect(metrics.inferredNoMatchCaseCount == 3)
+    #expect(metrics.falseAcceptanceRate == 1.0 / 3)
+    #expect(outcomes[1].selectedID == nil)
+    #expect(outcomes[1].policy?.status == "acceptedNoMatch")
+    #expect(outcomes[4].selectedID == nil)
+    #expect(outcomes[4].policy?.status == "abstained")
+    #expect(outcomes[4].policy?.reasons == ["belowMinimumProbability"])
+}
+
+@Test func policyMetricsHandleNoInferenceAndNoAcceptedCases() async throws {
+    let policy = try ToolDecisionAcceptancePolicy(minimumProbability: 1, minimumMargin: 1)
+    let empty = try await evaluationOutcome("empty", expected: [], candidates: [], selected: nil,
+                                             toolProbability: 0, policy: policy)
+    let emptyMetrics = RoutingPolicyMetrics([empty])
+    #expect(emptyMetrics.inferredCaseCount == 0)
+    #expect(emptyMetrics.acceptedCaseCount == 0)
+    #expect(emptyMetrics.acceptedNoMatchCaseCount == 0)
+    #expect(emptyMetrics.coverage == nil)
+    #expect(emptyMetrics.abstentionRate == nil)
+    #expect(emptyMetrics.acceptedAccuracy == nil)
+    #expect(emptyMetrics.candidateRelativeAccuracy == nil)
+    #expect(emptyMetrics.falseAcceptanceRate == nil)
+
+    let abstained = try await evaluationOutcome("abstained", expected: [], candidates: ["b"], selected: nil,
+                                                toolProbability: 0.4, policy: policy)
+    let metrics = RoutingPolicyMetrics([empty, abstained])
+    #expect(metrics.inferredCaseCount == 1)
+    #expect(metrics.acceptedCaseCount == 0)
+    #expect(metrics.abstainedCaseCount == 1)
+    #expect(metrics.coverage == 0)
+    #expect(metrics.abstentionRate == 1)
+    #expect(metrics.decisionAccuracy == 0)
+    #expect(metrics.candidateRelativeAccuracy == 0)
+    #expect(metrics.acceptedAccuracy == nil)
+    #expect(metrics.acceptedCandidateRelativeAccuracy == nil)
+    #expect(metrics.falseAcceptanceRate == 0)
+    #expect(throws: CLIError.self) { try RoutingMetrics([]) }
+}
+
+@Test func optionalPolicyJSONPreservesRawOutcomesAndMetrics() async throws {
+    let policy = try ToolDecisionAcceptancePolicy(minimumProbability: 0.8, minimumMargin: 0.1)
+    let disabled = try await evaluationOutcome("same", expected: [], candidates: ["b"], selected: nil,
+                                               toolProbability: 0.4, policy: nil)
+    let enabled = try await evaluationOutcome("same", expected: [], candidates: ["b"], selected: nil,
+                                              toolProbability: 0.4, policy: policy)
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.sortedKeys]
+    var enabledJSON = try #require(JSONSerialization.jsonObject(with: encoder.encode(enabled)) as? [String: Any])
+    let disabledJSON = try #require(JSONSerialization.jsonObject(with: encoder.encode(disabled)) as? [String: Any])
+    #expect(disabledJSON["policy"] == nil)
+    let removedPolicy = enabledJSON.removeValue(forKey: "policy")
+    let policyJSON = try #require(removedPolicy as? [String: Any])
+    #expect(policyJSON["status"] as? String == "abstained")
+    #expect(policyJSON["reasons"] as? [String] == ["belowMinimumProbability"])
+    #expect(policyJSON["selectedProbability"] as? Double == 0.6)
+    #expect(abs(try #require(policyJSON["probabilityMargin"] as? Double) - 0.2) < 1e-12)
+    #expect(NSDictionary(dictionary: enabledJSON).isEqual(to: disabledJSON))
+    #expect(try encoder.encode(RoutingMetrics([enabled])) == encoder.encode(RoutingMetrics([disabled])))
+
+    let configuration = try #require(RoutingPolicyConfiguration(minimumProbability: nil, minimumMargin: 0.25))
+    let configurationJSON = try #require(JSONSerialization.jsonObject(with: encoder.encode(configuration)) as? [String: Any])
+    #expect(configurationJSON["minimumProbability"] as? Double == 0)
+    #expect(configurationJSON["minimumProbabilitySource"] as? String == "defaultZero")
+    #expect(configurationJSON["minimumMargin"] as? Double == 0.25)
+    #expect(configurationJSON["minimumMarginSource"] as? String == "commandLine")
+}
+
+private struct EvaluationFixedModel: DecisionModel {
+    let selectedID: String
+    let probabilities: [OptionProbability]
+
+    func predict(_ request: DecisionRequest) async throws -> [DecisionResult] {
+        [.init(id: ToolDecisionSelector.questionID, answer: .choice(selectedID: selectedID, probabilities: probabilities),
+               confidence: 0.123, actProbability: 0.9, inputTokenCount: 5)]
+    }
+}
+
+private func evaluationOutcome(_ id: String, expected: [String], candidates: [String], selected: String?,
+                               toolProbability: Double, policy: ToolDecisionAcceptancePolicy?) async throws -> RoutingOutcome {
+    let probabilities = candidates.map { OptionProbability(optionID: $0, probability: toolProbability) }
+        + [OptionProbability(optionID: ToolDecisionSelector.noMatchID, probability: 1 - toolProbability)]
+    let selector = try ToolDecisionSelector(model: EvaluationFixedModel(
+        selectedID: selected ?? ToolDecisionSelector.noMatchID, probabilities: probabilities))
+    let selection = try await selector.select(query: "Choose a tool", candidates: candidates.map {
+        .init(id: $0, description: "Tool \($0)")
+    })
+    return .init(id: id, expectedToolIDs: expected, candidateIDs: candidates, retrievalSelectedID: candidates.first,
+        selectedID: selection.selectedCandidateID,
+        candidateProbabilities: selection.candidateProbabilities.map { .init(id: $0.optionID, probability: $0.probability) },
+        noMatchProbability: selection.noMatchProbability, latencyMilliseconds: 1,
+        inputTokenCount: selection.inputTokenCount, confidence: selection.confidence, actProbability: selection.actProbability,
+        policy: policy.map { RoutingPolicyOutcome($0.evaluate(selection)) })
 }

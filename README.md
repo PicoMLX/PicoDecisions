@@ -199,6 +199,11 @@ The included routing dataset is a small handwritten development smoke test with
 manually ranked candidates. Use your own labeled requests before making accuracy
 or calibration claims. See [measurement details](Docs/Benchmarks.md).
 
+`evaluate` also supports opt-in `--minimum-probability` and `--minimum-margin`
+thresholds. Its policy report preserves raw predictions and measures acceptance
+coverage, abstention, and accepted-answer errors. See
+[policy evaluation](Docs/RoutingPolicyEvaluation.md).
+
 For repeatable validation, use `Scripts/test.sh core`, `Scripts/test.sh inference`,
 or `PICODECISIONS_LAYA_MODEL="$PWD/models/laya-multilingual" Scripts/test.sh checkpoint`.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for CI and environment details.
