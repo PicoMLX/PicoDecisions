@@ -3,7 +3,8 @@ Copyright 2026 PicoDecisions contributors
 
 The Laya inference implementation adapts software from:
 
-Laya, by Convai Innovations and contributors (Apache-2.0)
+Laya (Apache-2.0)
+Copyright Convai Innovations and Laya contributors.
 https://github.com/NandhaKishorM/laya
 Reference revision: 6a5819129eb220570792e417e49723d697efd76f
 

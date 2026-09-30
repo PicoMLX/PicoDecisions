@@ -1,0 +1,32 @@
+name: Metal inference tests
+
+# Maintainers dispatch this on a provisioned Mac with real GPU access.
+# Standard hosted macOS arm64 VMs do not promise Metal GPU acceleration.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: metal-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  inference:
+    runs-on: [self-hosted, macOS, ARM64, picodecisions-metal]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run synthetic inference and core tests
+        run: Scripts/test.sh inference
+      - name: Save failed test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metal-test-results
+          path: DerivedData/Logs/Test/*.xcresult
+          if-no-files-found: ignore
+          retention-days: 7

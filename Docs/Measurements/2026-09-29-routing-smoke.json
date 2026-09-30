@@ -1,0 +1,437 @@
+{
+  "batchSize" : 16,
+  "checkpoint" : {
+    "agentConfigurationSHA256" : "25061739243b617ad88d1219ba6f8a9c86c5881ca28df024fa2d9b3b2fcc30c6",
+    "directoryName" : "laya-multilingual",
+    "encoderConfigurationSHA256" : "83f6916d13ef0f556ac461f28308dc2bffa7ebeadee8ec9e2db5812020ea5bb4",
+    "tokenizerConfigurationSHA256" : "424b69444bf7b5809dc2cd2e36d0bd71b8055124dd24274d6db3c655d38205e7",
+    "tokenizerSHA256" : "609d8f4c067cd3950f88594c5a802616cea245823836ef5848ee4fc40aab5b6f",
+    "weightsSHA256" : "9d628fd971b700382ac6f65920a86f149777b2e748e0c955fb3b19695aa8f204"
+  },
+  "datasetDescription" : "Handwritten development cases with manually supplied candidate rankings, including intentionally poor rankings and missing candidates. This small dataset is for exercising the evaluation pipeline, not estimating production accuracy. Multiple expected IDs mean any one is acceptable; the selector recommends one tool and does not plan multiple actions.",
+  "datasetName" : "routing-development-smoke-v1",
+  "datasetSHA256" : "514f5d313cc2b79c3f9adf54d9a867c34a8d6d25de6aa202efb6d23561b62c2f",
+  "latency" : {
+    "meanMilliseconds" : 53.63406564285714,
+    "medianMilliseconds" : 60.742084,
+    "minimumMilliseconds" : 0.01575,
+    "p95Milliseconds" : 69.224708,
+    "samplesMilliseconds" : [
+      55.257292,
+      39.940375,
+      43.222167,
+      44.321875,
+      51.348917,
+      59.019459,
+      64.46475,
+      69.224708,
+      64.235334,
+      0.01575,
+      65.860958,
+      66.311917,
+      65.188708,
+      62.464709
+    ]
+  },
+  "loadMilliseconds" : 1560.988667,
+  "maximumCandidates" : 8,
+  "memory" : {
+    "activeBytes" : 643832354,
+    "cacheBytes" : 322455483,
+    "peakActiveBytes" : 736231997
+  },
+  "metrics" : {
+    "calibrationCaseCount" : 13,
+    "caseCount" : 14,
+    "decisionAccuracy" : 0.8571428571428571,
+    "expectedCalibrationError" : 0.07970129791659554,
+    "falseAcceptanceRate" : 0.3333333333333333,
+    "falseRejectionRate" : 0,
+    "matchingCaseCount" : 11,
+    "meanCandidateRecall" : 0.9090909090909091,
+    "noMatchCaseCount" : 3,
+    "retrievalAccuracy" : 0.35714285714285715,
+    "retrievalMissCaseCount" : 1,
+    "selectableMatchingCaseCount" : 10
+  },
+  "outcomes" : [
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "cancel_order",
+        "find_order"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "cancel_order",
+          "probability" : 0.0010106983607554073
+        },
+        {
+          "id" : "find_order",
+          "probability" : 0.9974208409852667
+        }
+      ],
+      "confidence" : 0.9820907535185501,
+      "expectedToolIDs" : [
+        "find_order"
+      ],
+      "id" : "lookup-negation",
+      "inputTokenCount" : 98,
+      "latencyMilliseconds" : 55.257292,
+      "noMatchProbability" : 0.00156846065397805,
+      "retrievalSelectedID" : "cancel_order",
+      "selectedID" : "find_order"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "cancel_order",
+        "find_order"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "cancel_order",
+          "probability" : 0.9999999636804033
+        },
+        {
+          "id" : "find_order",
+          "probability" : 1.3545823900897404e-08
+        }
+      ],
+      "confidence" : 0.9999993787645941,
+      "expectedToolIDs" : [
+        "cancel_order"
+      ],
+      "id" : "cancel-order",
+      "inputTokenCount" : 94,
+      "latencyMilliseconds" : 39.940375,
+      "noMatchProbability" : 2.2773772630948334e-08,
+      "retrievalSelectedID" : "cancel_order",
+      "selectedID" : "cancel_order"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "weather",
+        "reminder"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "weather",
+          "probability" : 0.9999738227102736
+        },
+        {
+          "id" : "reminder",
+          "probability" : 5.594222564806121e-06
+        }
+      ],
+      "confidence" : 0.9997124145031783,
+      "expectedToolIDs" : [
+        "weather"
+      ],
+      "id" : "weather",
+      "inputTokenCount" : 94,
+      "latencyMilliseconds" : 43.222167,
+      "noMatchProbability" : 2.0583067161513427e-05,
+      "retrievalSelectedID" : "weather",
+      "selectedID" : "weather"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "weather",
+        "reminder"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "weather",
+          "probability" : 0.006797904297625295
+        },
+        {
+          "id" : "reminder",
+          "probability" : 0.9496253117925312
+        }
+      ],
+      "confidence" : 0.8001574852424261,
+      "expectedToolIDs" : [
+        "reminder"
+      ],
+      "id" : "reminder",
+      "inputTokenCount" : 96,
+      "latencyMilliseconds" : 44.321875,
+      "noMatchProbability" : 0.04357678390984353,
+      "retrievalSelectedID" : "weather",
+      "selectedID" : "reminder"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "find_order",
+        "weather"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "find_order",
+          "probability" : 0.002048505049126143
+        },
+        {
+          "id" : "weather",
+          "probability" : 0.002064571673354339
+        }
+      ],
+      "confidence" : 0.9731014525588404,
+      "expectedToolIDs" : [
+
+      ],
+      "id" : "no-matching-capability",
+      "inputTokenCount" : 99,
+      "latencyMilliseconds" : 51.348917,
+      "noMatchProbability" : 0.9958869232775196,
+      "retrievalSelectedID" : "find_order"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "find_order",
+        "cancel_order"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "find_order",
+          "probability" : 0.009750218701535694
+        },
+        {
+          "id" : "cancel_order",
+          "probability" : 0.5315646737467596
+        }
+      ],
+      "confidence" : 0.32773814483845665,
+      "expectedToolIDs" : [
+
+      ],
+      "id" : "explicit-no-action",
+      "inputTokenCount" : 102,
+      "latencyMilliseconds" : 59.019459,
+      "noMatchProbability" : 0.4586851075517047,
+      "retrievalSelectedID" : "find_order",
+      "selectedID" : "cancel_order"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "cancel_order",
+        "weather"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "cancel_order",
+          "probability" : 4.314730016120603e-05
+        },
+        {
+          "id" : "weather",
+          "probability" : 0.9998905449124667
+        }
+      ],
+      "confidence" : 0.99892493593557,
+      "expectedToolIDs" : [
+        "weather"
+      ],
+      "id" : "weather-with-negation",
+      "inputTokenCount" : 99,
+      "latencyMilliseconds" : 64.46475,
+      "noMatchProbability" : 6.630778737203396e-05,
+      "retrievalSelectedID" : "cancel_order",
+      "selectedID" : "weather"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "find_order",
+        "cancel_order",
+        "reminder"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "find_order",
+          "probability" : 0.0004143725592282903
+        },
+        {
+          "id" : "cancel_order",
+          "probability" : 0.8212331619962818
+        },
+        {
+          "id" : "reminder",
+          "probability" : 0.17656652043594445
+        }
+      ],
+      "confidence" : 0.6519891520206718,
+      "expectedToolIDs" : [
+        "cancel_order",
+        "reminder"
+      ],
+      "id" : "multiple-capabilities",
+      "inputTokenCount" : 108,
+      "latencyMilliseconds" : 69.224708,
+      "noMatchProbability" : 0.001785945008545446,
+      "retrievalSelectedID" : "find_order",
+      "selectedID" : "cancel_order"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "find_order",
+        "weather"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "find_order",
+          "probability" : 0.0070551367166753875
+        },
+        {
+          "id" : "weather",
+          "probability" : 0.005941020760479837
+        }
+      ],
+      "confidence" : 0.9287142441630745,
+      "expectedToolIDs" : [
+        "summarize_document"
+      ],
+      "id" : "missing-candidate",
+      "inputTokenCount" : 96,
+      "latencyMilliseconds" : 64.235334,
+      "noMatchProbability" : 0.9870038425228447,
+      "retrievalSelectedID" : "find_order"
+    },
+    {
+      "candidateIDs" : [
+
+      ],
+      "candidateProbabilities" : [
+
+      ],
+      "expectedToolIDs" : [
+
+      ],
+      "id" : "empty-candidates",
+      "latencyMilliseconds" : 0.01575
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "reminder",
+        "weather"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "reminder",
+          "probability" : 0.9959633798414878
+        },
+        {
+          "id" : "weather",
+          "probability" : 0.00027590580429078866
+        }
+      ],
+      "confidence" : 0.975162982025803,
+      "expectedToolIDs" : [
+        "reminder"
+      ],
+      "id" : "missing-reminder-details",
+      "inputTokenCount" : 91,
+      "latencyMilliseconds" : 65.860958,
+      "noMatchProbability" : 0.003760714354221411,
+      "retrievalSelectedID" : "reminder",
+      "selectedID" : "reminder"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "weather",
+        "find_order"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "weather",
+          "probability" : 0.99997917345707
+        },
+        {
+          "id" : "find_order",
+          "probability" : 4.222763329664119e-06
+        }
+      ],
+      "confidence" : 0.9997671404898507,
+      "expectedToolIDs" : [
+        "weather"
+      ],
+      "id" : "german-weather",
+      "inputTokenCount" : 97,
+      "latencyMilliseconds" : 66.311917,
+      "noMatchProbability" : 1.660377960019388e-05,
+      "retrievalSelectedID" : "weather",
+      "selectedID" : "weather"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "cancel_order",
+        "find_order"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "cancel_order",
+          "probability" : 0.02065220944249331
+        },
+        {
+          "id" : "find_order",
+          "probability" : 0.7484708581353738
+        }
+      ],
+      "confidence" : 0.4216211651421271,
+      "expectedToolIDs" : [
+        "find_order"
+      ],
+      "id" : "french-lookup",
+      "inputTokenCount" : 100,
+      "latencyMilliseconds" : 65.188708,
+      "noMatchProbability" : 0.230876932422133,
+      "retrievalSelectedID" : "cancel_order",
+      "selectedID" : "find_order"
+    },
+    {
+      "actProbability" : 1,
+      "candidateIDs" : [
+        "find_order",
+        "cancel_order"
+      ],
+      "candidateProbabilities" : [
+        {
+          "id" : "find_order",
+          "probability" : 1.1722933652418148e-08
+        },
+        {
+          "id" : "cancel_order",
+          "probability" : 0.9999999775194978
+        }
+      ],
+      "confidence" : 0.9999996050129829,
+      "expectedToolIDs" : [
+        "cancel_order"
+      ],
+      "id" : "chinese-cancellation",
+      "inputTokenCount" : 91,
+      "latencyMilliseconds" : 62.464709,
+      "noMatchProbability" : 1.0757568619463746e-08,
+      "retrievalSelectedID" : "find_order",
+      "selectedID" : "cancel_order"
+    }
+  ],
+  "precision" : "float16",
+  "runtime" : {
+    "buildConfiguration" : "release",
+    "gpu" : "Apple M1 Max",
+    "operatingSystem" : "Version 26.6.2 (Build 25G83)",
+    "physicalMemoryBytes" : 34359738368,
+    "processorCount" : 10
+  },
+  "schemaVersion" : 1,
+  "timestamp" : "2026-09-30T04:04:59Z"
+}
