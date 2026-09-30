@@ -1,0 +1,83 @@
+name: iOS library builds
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: iOS ${{ matrix.platform }} / arm64
+    runs-on: macos-26
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [device, simulator]
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      PICODECISIONS_BUILD_JOBS: 2
+      # The resolved MLX CudaBuild plugin returns no commands on Apple platforms.
+      PICODECISIONS_TRUST_PACKAGE_PLUGINS: 1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure build paths
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          printf '%s\n' "PICODECISIONS_DERIVED_DATA_PATH=$RUNNER_TEMP/picodecisions-ios-$PLATFORM" \
+            "PICODECISIONS_PACKAGE_CACHE_PATH=$RUNNER_TEMP/picodecisions-ios-packages" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.PICODECISIONS_PACKAGE_CACHE_PATH }}
+          key: ios-source-${{ runner.os }}-${{ runner.arch }}-xcode26.6-${{ hashFiles('Package.resolved') }}
+      - name: Verify arm64 runner and Metal compiler component
+        shell: bash
+        run: |
+          test "$(uname -m)" = arm64
+          component_status() {
+            local details status
+            details="$(xcodebuild -showComponent MetalToolchain 2>&1)" || true
+            status="$(printf '%s\n' "$details" | awk -F': *' '/^[[:space:]]*Status:/ { gsub(/[[:space:]]/, "", $2); print tolower($2); exit }')"
+            if [ -n "$status" ]; then
+              printf '%s\n' "$status"
+            elif [[ "$details" == *"No downloaded assets found"* ]]; then
+              printf '%s\n' uninstalled
+            else
+              printf '%s\n' "$details" >&2
+              echo "::error::Could not determine MetalToolchain installation status." >&2
+              return 1
+            fi
+          }
+          status="$(component_status)"
+          case "$status" in
+            installed) ;;
+            uninstalled) xcodebuild -downloadComponent MetalToolchain ;;
+            *) echo "::error::Unexpected MetalToolchain status: $status"; exit 1 ;;
+          esac
+          if [ "$(component_status)" != installed ]; then
+            echo "::error::MetalToolchain is unavailable after installation."
+            exit 1
+          fi
+      - name: Compile libraries and Metal resources
+        shell: bash
+        run: Scripts/build-ios.sh "${{ matrix.platform }}" 2>&1 | tee "$RUNNER_TEMP/ios-build.log"
+      - name: Save failed build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-${{ matrix.platform }}-build-logs
+          path: |
+            ${{ runner.temp }}/ios-build.log
+            ${{ env.PICODECISIONS_DERIVED_DATA_PATH }}/Logs/Build/*.xcactivitylog
+          if-no-files-found: ignore
+          retention-days: 7

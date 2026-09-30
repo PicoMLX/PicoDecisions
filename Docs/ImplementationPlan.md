@@ -75,6 +75,11 @@ a maintainer-dispatched physical runner. `Scripts/run.sh` builds a Release demo,
 benchmark, and evaluator with Xcode. Robustness tests cover calls canceled before execution,
 concurrent callers, malformed checkpoint files, and prompt capacity boundaries.
 
+`Scripts/build-ios.sh` and the hosted iOS build matrix compile the library and
+Metal resources for unsigned arm64 device/simulator destinations with an iOS 18
+deployment target. Both local builds pass; physical-device inference remains
+outstanding. See [IOSValidation.md](IOSValidation.md).
+
 Hosted core/CLI CI has passed. Next: provision the Metal runner, collect a representative
 held-out routing corpus, evaluate actual retrieval output, and assess calibration
 or domain fine-tuning before enabling model-based candidate rejection.

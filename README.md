@@ -26,6 +26,10 @@ Requires Swift 6.3+, macOS 15+ or iOS 18+, and Apple silicon for MLX. The pinned
 MLX Swift dependency requires Swift 6.3, including when resolving core-only builds.
 Validation currently covers macOS; physical iOS device validation remains outstanding.
 
+Unsigned arm64 library builds also pass for generic iOS device and simulator
+destinations. See [iOS build validation](Docs/IOSValidation.md); physical-device
+inference, latency, and memory still require testing.
+
 ## Use a local checkpoint
 
 Add [PicoMLX/PicoDecisions](https://github.com/PicoMLX/PicoDecisions) as a Swift

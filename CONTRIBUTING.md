@@ -66,6 +66,12 @@ and [larger runner specifications](https://docs.github.com/en/actions/reference/
 
 ## Pull requests and reproducibility
 
+The **iOS library builds** workflow compiles device and simulator libraries and
+Metal resources on hosted runners. Locally, use `Scripts/build-ios.sh device`
+and `Scripts/build-ios.sh simulator`. These checks need no device or signing and
+do not run inference. See [iOS validation](Docs/IOSValidation.md) for SDK and cache
+details.
+
 Explain the behavior being changed, the relevant checks run, and any validation
 that remains outstanding. Add focused regression coverage for correctness changes.
 Inference changes should retain Python parity within the documented tolerances.
