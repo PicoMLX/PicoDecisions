@@ -51,6 +51,12 @@ IDs, validates outputs, skips empty candidate sets, and keeps retrieval scores
 as metadata separate from model probabilities. Callers own thresholds, argument
 collection, authorization, execution, and fallback.
 
+Laya reports original and retained token counts for state, instructions, and
+every option. The selector and acceptance disposition preserve these diagnostics
+so a consuming application can surface lost criteria. `.reject` rejects state
+overflow while retaining upstream instruction/option budgets. See
+[InputDiagnostics.md](InputDiagnostics.md).
+
 `ToolDecisionAcceptancePolicy` optionally defers uncertain recommendations using
 explicit selected-probability and runner-up-margin thresholds. It preserves raw
 answers and keeps accepted no match separate from abstention. See

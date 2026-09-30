@@ -12,6 +12,40 @@ import Testing
     #expect(throws: CLIError.self) { try LatencyStatistics([.nan]) }
 }
 
+@Test func optionalInputDiagnosticsJSONPreservesRawPredictionFields() throws {
+    let diagnostics = DecisionInputDiagnostics(
+        state: .init(originalTokenCount: 100, retainedTokenCount: 20),
+        instructions: .init(originalTokenCount: 8, retainedTokenCount: 8),
+        options: [.init(optionID: "weather", tokens: .init(originalTokenCount: 60, retainedTokenCount: 48))])
+    func result(_ diagnostics: DecisionInputDiagnostics?) -> DecisionResult {
+        .init(id: "route", answer: .choice(selectedID: "weather", probabilities: [
+            .init(optionID: "weather", probability: 1)]), inputTokenCount: 81, inputDiagnostics: diagnostics)
+    }
+    let encoder = JSONEncoder()
+    let without = try #require(JSONSerialization.jsonObject(with: encoder.encode(
+        PredictionReport(result(nil)))) as? [String: Any])
+    var with = try #require(JSONSerialization.jsonObject(with: encoder.encode(
+        PredictionReport(result(diagnostics)))) as? [String: Any])
+    #expect(without["inputDiagnostics"] == nil)
+    let encodedDiagnostics = try #require(with.removeValue(forKey: "inputDiagnostics") as? [String: Any])
+    #expect(encodedDiagnostics["wasTruncated"] as? Bool == true)
+    let state = try #require(encodedDiagnostics["state"] as? [String: Any])
+    #expect(state["originalTokenCount"] as? Int == 100)
+    #expect(state["retainedTokenCount"] as? Int == 20)
+    let options = try #require(encodedDiagnostics["options"] as? [[String: Any]])
+    #expect(options.first?["optionID"] as? String == "weather")
+    #expect(NSDictionary(dictionary: with).isEqual(to: without))
+    #expect(try JSONDecoder().decode(DecisionInputDiagnostics.self, from: encoder.encode(diagnostics)) == diagnostics)
+
+    let outcome = RoutingOutcome(id: "route", expectedToolIDs: ["weather"], candidateIDs: ["weather"],
+        retrievalSelectedID: "weather", selectedID: "weather", candidateProbabilities: [.init(id: "weather", probability: 1)],
+        noMatchProbability: 0, latencyMilliseconds: 1, inputTokenCount: 81, confidence: nil, actProbability: nil,
+        inputDiagnostics: diagnostics)
+    let routingJSON = try #require(JSONSerialization.jsonObject(with: encoder.encode(outcome)) as? [String: Any])
+    let routingDiagnostics = try #require(routingJSON["inputDiagnostics"] as? [String: Any])
+    #expect(NSDictionary(dictionary: routingDiagnostics).isEqual(to: encodedDiagnostics))
+}
+
 @Test func separatesRetrievalMissesRejectionAndNoMatch() throws {
     func outcome(_ id: String, expected: [String], candidates: [String], selected: String?) -> RoutingOutcome {
         .init(id: id, expectedToolIDs: expected, candidateIDs: candidates,

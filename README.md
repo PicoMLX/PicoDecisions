@@ -85,7 +85,8 @@ for result in results {
 Results retain question and option order. Choice answers include the selected ID
 and option probabilities. Scores are expected **zero-based level indices** with
 the full level distribution. Booleans return the probability of true. Each result
-also includes model confidence, act probability, and the input token count.
+also includes model confidence, act probability, the input token count, and
+component token counts in `inputDiagnostics` when the backend supplies them.
 
 Laya's choice/score confidence is normalized entropy confidence; boolean confidence
 is the larger of the true/false probabilities. Act probability is the separate
@@ -112,6 +113,16 @@ backend accepts at most 255 options, subject to the total context capacity, and
 replaces literal mask-token text as upstream does. Request validation rejects
 empty option sets, empty score rubrics, blank instructions, and duplicate IDs.
 Empty state and zero-question requests are supported.
+
+Laya always reports `inputDiagnostics` for an inferred question. Check
+`inputDiagnostics.wasTruncated` before relying on a result that may have lost
+instructions, criteria, or state. The diagnostics include original and retained
+token counts for state, instructions, and each option in request order. Counts
+describe cleaned, formatted text: instruction type prefixes and option labels
+are included; structural CLS/SEP/MASK tokens are excluded. Choice options retain
+their IDs, score options use zero-based index strings, and boolean options use
+`"false"` and `"true"`. Other backends may omit diagnostics; nil means unavailable.
+See [prompt diagnostics](Docs/InputDiagnostics.md) for an example and exact limits.
 
 Supply structured state and criterion descriptions as strings (for example,
 serialized JSON). Boolean questions can override either or both false/true

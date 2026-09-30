@@ -63,6 +63,12 @@ values remain in the original selection. Accepted recommendations still require
 the application's argument collection, authorization, execution, and fallback
 rules. Applying a policy does not rerun inference or change model quality.
 
+Inspect `selection.inputDiagnostics` when requests or tool descriptions are
+long. Laya may shorten instructions and options even with its state input policy
+set to `.reject`. The selector and policy preserve those counts so the
+application can show a warning or defer a result with lost criteria. See
+[prompt diagnostics](InputDiagnostics.md).
+
 ## Evaluate the tradeoff
 
 The [recorded development smoke run](Measurements/2026-09-29-routing-smoke.json)

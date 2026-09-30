@@ -75,6 +75,9 @@ public struct DecisionResult: Sendable, Equatable, Identifiable {
     public let actProbability: Double?
     /// Tokens consumed by this question, including its prompt and state.
     public let inputTokenCount: Int?
+    /// Component token counts when the model reports prompt truncation details.
+    /// Nil means diagnostics are unavailable, not that all text was retained.
+    public let inputDiagnostics: DecisionInputDiagnostics?
 
     public enum Answer: Sendable, Equatable {
         case choice(selectedID: String, probabilities: [OptionProbability])
@@ -84,12 +87,14 @@ public struct DecisionResult: Sendable, Equatable, Identifiable {
     }
 
     public init(id: String, answer: Answer, confidence: Double? = nil,
-                actProbability: Double? = nil, inputTokenCount: Int? = nil) {
+                actProbability: Double? = nil, inputTokenCount: Int? = nil,
+                inputDiagnostics: DecisionInputDiagnostics? = nil) {
         self.id = id
         self.answer = answer
         self.confidence = confidence
         self.actProbability = actProbability
         self.inputTokenCount = inputTokenCount
+        self.inputDiagnostics = inputDiagnostics
     }
 }
 
