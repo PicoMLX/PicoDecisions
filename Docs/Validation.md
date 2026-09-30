@@ -16,15 +16,21 @@ calls, malformed tokenizer/config/checkpoint files, exact state capacity,
 The September 29, 2026 verification passed 16 core, eight CLI, and 26 backend
 test functions, including parameterized cases. The same tests also passed through
 SwiftPM on the Swift 6.4 / Xcode 27 toolchain, which generated the Metal bundle.
-The hosted CI toolchain and physical iOS devices still require independent checks.
+Hosted core/CLI checks also passed on Swift 6.3.3 after the initial milestone.
+Physical iOS inference still requires independent checks.
 
-The trained multilingual suite compares 15 cases / 60 questions against an
-existing PyTorch FP32 reference. It includes English, Chinese, German, French,
+The trained multilingual suite compares 16 cases /
+63 questions against an existing PyTorch FP32 reference. It includes English, Chinese, German, French,
 Spanish, Hindi, Japanese, Russian, empty state, long-input truncation, conversation
 JSON, literal mask text, 20 questions in one request, and 20 choice options.
 All token IDs, marker positions, question types, token counts, and selected
 choices match. Public results are tested in batches of eight; the raw network
 comparison uses each reference case's full question batch.
+
+The structured-criteria case covers JSON instruction/choice/score descriptions
+and a custom true boolean criterion with the default false criterion. The expanded
+fixture passed a fresh FP32/FP16 checkpoint-suite run on September 30, 2026; the
+largest numerical differences below remained unchanged.
 
 | Comparison | Largest absolute difference observed |
 | --- | --- |
@@ -63,9 +69,9 @@ English/typed checkpoints remain unvalidated.
   `9d628fd971b700382ac6f65920a86f149777b2e748e0c955fb3b19695aa8f204`.
 
 The normalized fixture preserves original outputs and precomputed token IDs. It
-serializes structured state using Python's original JSON representation and
-turns question dictionaries into ordered arrays. The source's structured-criteria
-case is excluded because it uses a custom boolean rubric absent from this API.
+serializes structured state, instructions, and criteria using Python's original
+JSON representation and turns question dictionaries into ordered arrays. Custom
+boolean descriptions retain false/true labels and use defaults for omitted sides.
 No trained model weights are included in the repository.
 
 ## Reproduce

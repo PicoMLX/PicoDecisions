@@ -22,6 +22,22 @@ public struct DecisionQuestion: Sendable, Equatable, Identifiable {
     public let id: String
     public let instructions: String
     public let kind: Kind
+    /// Optional false/true descriptions for a boolean question.
+    /// Nil uses the default rubric.
+    public let booleanCriteria: BooleanCriteria?
+
+    /// Descriptions for the two boolean outcomes, in false then true order.
+    /// Either initializer argument may be omitted to keep its default description.
+    public struct BooleanCriteria: Sendable, Equatable {
+        public let falseDescription: String
+        public let trueDescription: String
+
+        public init(falseDescription: String = "no, the statement does not hold",
+                    trueDescription: String = "yes, the statement holds") {
+            self.falseDescription = falseDescription
+            self.trueDescription = trueDescription
+        }
+    }
 
     /// Choice options and score levels retain their supplied order.
     public enum Kind: Sendable, Equatable {
@@ -30,10 +46,12 @@ public struct DecisionQuestion: Sendable, Equatable, Identifiable {
         case boolean
     }
 
-    public init(id: String, instructions: String, kind: Kind) {
+    public init(id: String, instructions: String, kind: Kind,
+                booleanCriteria: BooleanCriteria? = nil) {
         self.id = id
         self.instructions = instructions
         self.kind = kind
+        self.booleanCriteria = booleanCriteria
     }
 }
 

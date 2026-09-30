@@ -110,7 +110,21 @@ empty option sets, empty score rubrics, blank instructions, and duplicate IDs.
 Empty state and zero-question requests are supported.
 
 Supply structured state and criterion descriptions as strings (for example,
-serialized JSON). Custom false/true boolean rubrics are not exposed in this API.
+serialized JSON). Boolean questions can override either or both false/true
+descriptions; the omitted side retains Laya's default description:
+
+```swift
+let refundQuestion = DecisionQuestion(
+    id: "refund",
+    instructions: "Does the request ask for a refund?",
+    kind: .boolean,
+    booleanCriteria: .init(trueDescription: "The user explicitly requests money back")
+)
+```
+
+Criteria always keep false then true order, and the result remains the probability
+of true. Custom descriptions must be nonblank and belong to a boolean question.
+They use the same token budgets and mask-token sanitization as other options.
 
 ## Validation
 

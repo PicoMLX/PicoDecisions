@@ -26,7 +26,18 @@ struct FullCheckpointTests {
         let type: String
         let options: [Option]?
         let levels: [String]?
+        let booleanCriteria: BooleanCriteria?
         struct Option: Decodable { let id: String; let description: String }
+        struct BooleanCriteria: Decodable {
+            let falseDescription: String?
+            let trueDescription: String?
+
+            var criteria: DecisionQuestion.BooleanCriteria {
+                let defaults = DecisionQuestion.BooleanCriteria()
+                return .init(falseDescription: falseDescription ?? defaults.falseDescription,
+                             trueDescription: trueDescription ?? defaults.trueDescription)
+            }
+        }
         var question: DecisionQuestion {
             let kind: DecisionQuestion.Kind
             switch type {
@@ -34,7 +45,8 @@ struct FullCheckpointTests {
             case "score": kind = .score(levels: levels!)
             default: kind = .boolean
             }
-            return .init(id: id, instructions: instructions, kind: kind)
+            return .init(id: id, instructions: instructions, kind: kind,
+                         booleanCriteria: booleanCriteria?.criteria)
         }
     }
     static func fixture() throws -> Fixture {
@@ -65,6 +77,7 @@ struct FullCheckpointTests {
             for c in cases {
                 let items = try prepareLaya(c.request, tokenizer: tokenizer, config: agent,
                     vocabularySize: encoder.vocabSize, policy: .truncateState)
+                #expect(items.count == c.items.count, "Question count: \(c.name)")
                 for (actual, expected) in zip(items, c.items) {
                     #expect(actual.ids == expected.ids, "Token IDs: \(c.name)")
                     #expect(actual.markers == expected.markers, "Markers: \(c.name)")

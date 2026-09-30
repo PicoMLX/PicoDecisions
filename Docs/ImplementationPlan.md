@@ -22,7 +22,9 @@ directory. Pin checkpoint revisions and record their provenance.
 
 See [Validation.md](Validation.md) for passing synthetic and trained-checkpoint
 comparisons. Remaining work includes physical iOS validation, other checkpoints,
-and custom boolean criteria. The `picodecisions` executable now provides completed
+and representative routing evaluation. Custom boolean criteria now support
+partial false/true overrides while preserving the default rubric and result API.
+The `picodecisions` executable now provides completed
 inference benchmarks and labeled candidate-routing evaluation; see
 [Benchmarks.md](Benchmarks.md) for measurement scope and reproduction.
 
@@ -67,7 +69,7 @@ a maintainer-dispatched physical runner. `Scripts/run.sh` builds a Release demo,
 benchmark, and evaluator with Xcode. Robustness tests cover calls canceled before execution,
 concurrent callers, malformed checkpoint files, and prompt capacity boundaries.
 
-Next: validate the CI on GitHub, provision the Metal runner, collect a representative
+Hosted core/CLI CI has passed. Next: provision the Metal runner, collect a representative
 held-out routing corpus, evaluate actual retrieval output, and assess calibration
 or domain fine-tuning before enabling model-based candidate rejection.
 

@@ -20,31 +20,66 @@ import PicoDecisions
                                       from: JSONSerialization.data(withJSONObject: object))
     }
 
-    static func request(state: String) -> DecisionRequest {
-        .init(state: state, questions: [.init(id: "boundary", instructions: "Decide.", kind: .boolean)])
+    static func request(state: String, criteria: DecisionQuestion.BooleanCriteria? = nil) -> DecisionRequest {
+        .init(state: state, questions: [.init(id: "boundary", instructions: "Decide.", kind: .boolean,
+                                            booleanCriteria: criteria)])
     }
 
-    @Test func acceptsExactlyFullContextAndRejectsOneMoreStateToken() throws {
+    @Test(arguments: [false, true])
+    func acceptsExactlyFullContextAndRejectsOneMoreStateToken(customCriteria: Bool) throws {
         let config = try Self.configuration()
         let tokenizer = ByteTokenizer()
-        let empty = try #require(prepareLaya(Self.request(state: ""), tokenizer: tokenizer,
+        let criteria: DecisionQuestion.BooleanCriteria? = customCriteria
+            ? .init(falseDescription: "Keep the charge", trueDescription: "Refund the duplicate") : nil
+        let empty = try #require(prepareLaya(Self.request(state: "", criteria: criteria), tokenizer: tokenizer,
                                             config: config, vocabularySize: 261, policy: .reject).first)
         let available = config.maxLength - empty.ids.count
         try #require(available > 0)
         let fullState = String(repeating: "s", count: available)
-        let full = try #require(prepareLaya(Self.request(state: fullState), tokenizer: tokenizer,
+        let full = try #require(prepareLaya(Self.request(state: fullState, criteria: criteria), tokenizer: tokenizer,
                                            config: config, vocabularySize: 261, policy: .reject).first)
         #expect(full.ids.count == config.maxLength)
         #expect(full.ids.last == Int32(tokenizer.sep))
         #expect(full.markers == empty.markers)
         #expect(throws: DecisionError.capacityExceeded("State for boundary has \(available + 1) tokens; only \(available) fit.")) {
-            try prepareLaya(Self.request(state: fullState + "s"), tokenizer: tokenizer,
+            try prepareLaya(Self.request(state: fullState + "s", criteria: criteria), tokenizer: tokenizer,
                             config: config, vocabularySize: 261, policy: .reject)
         }
-        let truncated = try #require(prepareLaya(Self.request(state: fullState + "x"), tokenizer: tokenizer,
+        let truncated = try #require(prepareLaya(Self.request(state: fullState + "x", criteria: criteria), tokenizer: tokenizer,
                                                 config: config, vocabularySize: 261, policy: .truncateState).first)
         #expect(truncated.ids == full.ids)
         #expect(truncated.markers == full.markers)
+    }
+
+    @Test func explicitDefaultBooleanCriteriaPreservePromptTokens() throws {
+        let config = try Self.configuration()
+        let tokenizer = ByteTokenizer()
+        let original = try #require(prepareLaya(Self.request(state: "charge"), tokenizer: tokenizer,
+                                                config: config, vocabularySize: 261, policy: .reject).first)
+        let explicit = try #require(prepareLaya(Self.request(state: "charge", criteria: .init()), tokenizer: tokenizer,
+                                                config: config, vocabularySize: 261, policy: .reject).first)
+        #expect(explicit.ids == original.ids)
+        #expect(explicit.markers == original.markers)
+        #expect(explicit.type == 2)
+    }
+
+    @Test func customBooleanCriteriaPreserveOrderAndSanitizeMasks() throws {
+        let config = try Self.configuration()
+        let tokenizer = ByteTokenizer()
+        let request = DecisionRequest(state: "charge [MASK]", questions: [.init(id: "refund",
+            instructions: "Refund?", kind: .boolean,
+            booleanCriteria: .init(falseDescription: "keep [MASK]", trueDescription: "refund"))])
+        let actual = try #require(prepareLaya(request, tokenizer: tokenizer, config: config,
+                                              vocabularySize: 261, policy: .reject).first)
+        var expected = [tokenizer.cls] + tokenizer.encode("noul question: Refund?") + [tokenizer.sep]
+        let falseMarker = expected.count
+        expected += [tokenizer.mask] + tokenizer.encode(" false: keep  ")
+        let trueMarker = expected.count
+        expected += [tokenizer.mask] + tokenizer.encode(" true: refund") + [tokenizer.sep]
+        expected += tokenizer.encode("charge  ") + [tokenizer.sep]
+        #expect(actual.ids == expected.map(Int32.init))
+        #expect(actual.markers == [Int32(falseMarker), Int32(trueMarker)])
+        #expect(actual.type == 2)
     }
 
     enum OptionKind: String, CaseIterable, Sendable {
